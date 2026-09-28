@@ -1,0 +1,268 @@
+use anyhow::{Context, Result};
+use log::{debug, error, info, warn};
+use reqwest::Client;
+use solana_sdk::{
+    pubkey::Pubkey,
+    signature::{Keypair, Signature},
+    signer::Signer,
+};
+use std::sync::Arc;
+use tokio::sync::mpsc;
+
+use crate::{
+    decoders::BondingCurveAccountPod,
+    engine::{
+        blockhash_cache::BlockhashCache,
+        instruction_builder::InstructionBuilder,
+        jito::JitoClient,
+        position_manager::{Position, PositionManager},
+        tip_engine::TipEngine,
+    },
+};
+
+#[derive(Debug, Clone)]
+pub enum TradeAction {
+    Buy {
+        mint: Pubkey,
+        sol_amount_lamports: u64,
+        slippage_bps: u64,
+        curve_state: BondingCurveAccountPod,
+        dev_wallet: Option<Pubkey>,
+    },
+    Sell {
+        mint: Pubkey,
+        token_amount: u64,
+        slippage_bps: u64,
+        curve_state: BondingCurveAccountPod,
+        is_panic: bool,
+    },
+}
+
+pub struct ExecutionEngine {
+    keypair: Arc<Keypair>,
+    jito_client: Arc<JitoClient>,
+    blockhash_cache: Arc<BlockhashCache>,
+    tip_engine: Arc<TipEngine>,
+    position_manager: Arc<PositionManager>,
+    rpc_url: String,
+    http_client: Client,
+}
+
+impl ExecutionEngine {
+    pub fn new(
+        keypair: Arc<Keypair>,
+        jito_client: Arc<JitoClient>,
+        blockhash_cache: Arc<BlockhashCache>,
+        tip_engine: Arc<TipEngine>,
+        position_manager: Arc<PositionManager>,
+        rpc_url: String,
+    ) -> Self {
+        Self {
+            keypair,
+            jito_client,
+            blockhash_cache,
+            tip_engine,
+            position_manager,
+            rpc_url,
+            http_client: Client::builder()
+                .timeout(std::time::Duration::from_millis(2500))
+                .build()
+                .unwrap_or_else(|_| Client::new()),
+        }
+    }
+
+    /// Spawn the asynchronous worker loop that listens for signals and executes Jito bundles
+    pub fn spawn_worker(
+        self: Arc<Self>,
+        mut rx: mpsc::Receiver<TradeAction>,
+    ) -> tokio::task::JoinHandle<()> {
+        tokio::spawn(async move {
+            info!("⚡ Trade Execution Engine worker spawned and listening for signals");
+            while let Some(action) = rx.recv().await {
+                let engine = Arc::clone(&self);
+                tokio::spawn(async move {
+                    if let Err(e) = engine.execute_action(action).await {
+                        error!("❌ Trade execution failed: {:#}", e);
+                    }
+                });
+            }
+        })
+    }
+
+    /// Polls RPC for signature confirmation status with short delay
+    pub async fn wait_for_confirmation(
+        &self,
+        signature: &Signature,
+        max_attempts: usize,
+        delay: std::time::Duration,
+    ) -> bool {
+        let payload = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getSignatureStatuses",
+            "params": [[signature.to_string()], {"searchTransactionHistory": false}]
+        });
+
+        for attempt in 1..=max_attempts {
+            tokio::time::sleep(delay).await;
+            if let Ok(resp) = self.http_client.post(&self.rpc_url).json(&payload).send().await {
+                if let Ok(json) = resp.json::<serde_json::Value>().await {
+                    if let Some(statuses) = json.get("result").and_then(|r| r.get("value")).and_then(|v| v.as_array()) {
+                        if let Some(Some(status)) = statuses.first().map(|s| s.as_object()) {
+                            let err_is_null = status.get("err").map(|e| e.is_null()).unwrap_or(false);
+                            if err_is_null {
+                                let confirmation = status.get("confirmationStatus").and_then(|s| s.as_str());
+                                if confirmation == Some("confirmed") || confirmation == Some("finalized") {
+                                    debug!("Signature {} confirmed on attempt {}", signature, attempt);
+                                    return true;
+                                }
+                            } else if status.get("err").map(|e| !e.is_null()).unwrap_or(false) {
+                                warn!("Signature {} failed on-chain with err: {:?}", signature, status.get("err"));
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    pub async fn execute_action(&self, action: TradeAction) -> Result<()> {
+        let blockhash = self.blockhash_cache.get_latest().await;
+        let payer_pubkey = self.keypair.pubkey();
+
+        match action {
+            TradeAction::Buy {
+                mint,
+                sol_amount_lamports,
+                slippage_bps,
+                curve_state,
+                dev_wallet,
+            } => {
+                let calc = curve_state
+                    .calculate_buy_output(sol_amount_lamports, slippage_bps)
+                    .context("Curve calculation failed or curve is complete")?;
+
+                info!(
+                    "🚀 Executing BUY for mint: {} | Tokens: {} | Max SOL: {} | Est Price: {} SOL",
+                    mint,
+                    calc.tokens_out,
+                    calc.max_sol_cost as f64 / 1e9,
+                    calc.effective_price_sol
+                );
+
+                let creator = dev_wallet.unwrap_or(curve_state.creator);
+
+                // Instructions: ComputeBudget + Create ATA Idempotent + Buy
+                let compute_cu = InstructionBuilder::set_compute_unit_limit(200_000);
+                let compute_price = InstructionBuilder::set_compute_unit_price(100_000);
+                let create_ata_ix =
+                    InstructionBuilder::create_ata_idempotent(&payer_pubkey, &payer_pubkey, &mint);
+                let buy_ix = InstructionBuilder::build_buy_instruction(
+                    &payer_pubkey,
+                    &mint,
+                    &creator,
+                    calc.tokens_out,
+                    calc.max_sol_cost,
+                );
+
+                let instructions = vec![compute_cu, compute_price, create_ata_ix, buy_ix];
+                let tip = self.tip_engine.default_tip();
+
+                let bundle_tx = self.jito_client.build_tip_bundle(
+                    &self.keypair,
+                    instructions,
+                    tip,
+                    blockhash,
+                );
+
+                let bundle_id = self.jito_client.send_bundle(&bundle_tx).await?;
+                let sig = bundle_tx.signatures[0];
+                info!("📡 Bundle {} dispatched (sig: {}). Verifying on-chain confirmation...", bundle_id, sig);
+
+                let landed = self.wait_for_confirmation(&sig, 8, std::time::Duration::from_millis(400)).await;
+                if landed {
+                    info!("✅ Trade confirmed on-chain in block! Registering position for {}", mint);
+                    self.position_manager
+                        .add_position(Position {
+                            mint,
+                            entry_price_sol: calc.effective_price_sol,
+                            highest_price_sol: calc.effective_price_sol,
+                            token_balance: calc.tokens_out,
+                            sol_invested_lamports: sol_amount_lamports,
+                            dev_wallet,
+                            dev_initial_balance: 0,
+                        })
+                        .await;
+                } else {
+                    warn!("⚠️ Bundle for mint {} did not land on-chain (dropped or outbid). Capital preserved (0 SOL spent).", mint);
+                }
+            }
+
+            TradeAction::Sell {
+                mint,
+                token_amount,
+                slippage_bps,
+                curve_state,
+                is_panic,
+            } => {
+                let calc = curve_state
+                    .calculate_sell_output(token_amount, slippage_bps)
+                    .context("Curve sell calculation failed")?;
+
+                info!(
+                    "⚠️ Executing SELL {} for mint: {} | Tokens: {} | Min SOL Out: {} | Est Price: {} SOL",
+                    if is_panic { "(PANIC DUMP FRONT-RUN)" } else { "" },
+                    mint,
+                    token_amount,
+                    calc.min_sol_output as f64 / 1e9,
+                    calc.effective_price_sol
+                );
+
+                let creator = curve_state.creator;
+
+                let compute_cu = InstructionBuilder::set_compute_unit_limit(150_000);
+                let compute_price = InstructionBuilder::set_compute_unit_price(if is_panic {
+                    1_000_000
+                } else {
+                    100_000
+                });
+                let sell_ix = InstructionBuilder::build_sell_instruction(
+                    &payer_pubkey,
+                    &mint,
+                    &creator,
+                    token_amount,
+                    calc.min_sol_output,
+                );
+
+                let instructions = vec![compute_cu, compute_price, sell_ix];
+                let tip = if is_panic {
+                    self.tip_engine.max_tip_lamports
+                } else {
+                    self.tip_engine.default_tip()
+                };
+
+                let bundle_tx = self.jito_client.build_tip_bundle(
+                    &self.keypair,
+                    instructions,
+                    tip,
+                    blockhash,
+                );
+
+                let bundle_id = self.jito_client.send_bundle(&bundle_tx).await?;
+                let sig = bundle_tx.signatures[0];
+                info!("📡 Sell bundle {} dispatched (sig: {}). Verifying on-chain confirmation...", bundle_id, sig);
+
+                let landed = self.wait_for_confirmation(&sig, 8, std::time::Duration::from_millis(400)).await;
+                if landed {
+                    info!("✅ Sell confirmed on-chain for mint {}", mint);
+                } else {
+                    warn!("⚠️ Sell bundle for mint {} did not land yet. Monitoring position.", mint);
+                }
+            }
+        }
+
+        Ok(())
+    }
+}

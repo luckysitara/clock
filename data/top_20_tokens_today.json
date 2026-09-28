@@ -1,0 +1,222 @@
+[
+  {
+    "symbol": "LEVERAGE",
+    "name": "Leverage Pad ",
+    "mint": "BM2k8mJUbMthHoioykyUm2NjMrXvLBYhoXruwYLpump",
+    "dex": "pumpswap",
+    "price_native": 5.893e-06,
+    "price_usd": 0.0006987,
+    "gain_24h_pct": 1329.0,
+    "volume_24h": 3567738.17,
+    "fdv": 651755.0
+  },
+  {
+    "symbol": "bukangi",
+    "name": "\ubd80\uce89\uc774 busan shark",
+    "mint": "3iUTyNYW6xKv5kZUjtbrEDTsuJTrSVwvB3bQtxkLpump",
+    "dex": "pumpswap",
+    "price_native": 3.167e-06,
+    "price_usd": 0.0005842,
+    "gain_24h_pct": 835.0,
+    "volume_24h": 6554574.79,
+    "fdv": 570552.0
+  },
+  {
+    "symbol": "XPAD",
+    "name": "XPad",
+    "mint": "FFzTy32bZbPA8zRLbbiWoNzW2emGv86tUxaoqhz1pump",
+    "dex": "pumpswap",
+    "price_native": 9.767e-06,
+    "price_usd": 0.001158,
+    "gain_24h_pct": 820.0,
+    "volume_24h": 3007717.98,
+    "fdv": 1150191.0
+  },
+  {
+    "symbol": "OMNINU",
+    "name": "Omninu",
+    "mint": "rsE4qbZ6Decdu1stnoHnC7QrNtqjuzuAuD9xnNGpump",
+    "dex": "pumpswap",
+    "price_native": 0.08239,
+    "price_usd": 0.0004059,
+    "gain_24h_pct": 558.0,
+    "volume_24h": 1384295.91,
+    "fdv": 376708.0
+  },
+  {
+    "symbol": "INSTA",
+    "name": "insta.fan",
+    "mint": "6UhUkSBc9RBB9gVJcjCWtcQv4t771rQF7bdn2qK7pump",
+    "dex": "pumpswap",
+    "price_native": 2.387e-06,
+    "price_usd": 0.0002831,
+    "gain_24h_pct": 284.0,
+    "volume_24h": 3682100.12,
+    "fdv": 270821.0
+  },
+  {
+    "symbol": "BOB",
+    "name": "bob",
+    "mint": "E4vwseNWpkBxzNxyv3msVLCzYHU5SXrj1QWXEycypump",
+    "dex": "pumpswap",
+    "price_native": 1.281e-06,
+    "price_usd": 0.000152,
+    "gain_24h_pct": 203.0,
+    "volume_24h": 2737781.19,
+    "fdv": 148167.0
+  },
+  {
+    "symbol": "VAULT",
+    "name": "VaultStrategy",
+    "mint": "7tEsDuij7aj4b2jLUAS5oXcp6B3zWratYVmviS5zpump",
+    "dex": "pumpswap",
+    "price_native": 1.03e-06,
+    "price_usd": 0.0001222,
+    "gain_24h_pct": 142.0,
+    "volume_24h": 5132928.91,
+    "fdv": 121265.0
+  },
+  {
+    "symbol": "TOBEY",
+    "name": "TOBEY MAGZ",
+    "mint": "FbrMGVE2548HfpMVhYsybmYyUQVHMefMiUSkckyipump",
+    "dex": "pumpswap",
+    "price_native": 7.837e-07,
+    "price_usd": 9.302e-05,
+    "gain_24h_pct": 91.18,
+    "volume_24h": 283449.72,
+    "fdv": 90074.0
+  },
+  {
+    "symbol": "baton",
+    "name": "baton",
+    "mint": "Hg5Ja55T5wESq4vyFoiVCMeHXtGyVA69X2UHq8hgpump",
+    "dex": "pumpswap",
+    "price_native": 0.5529,
+    "price_usd": 0.002735,
+    "gain_24h_pct": 58.94,
+    "volume_24h": 1530499.26,
+    "fdv": 2732424.0
+  },
+  {
+    "symbol": "Holdoween",
+    "name": "Holdoween",
+    "mint": "BxftAowY2dVa2h9KMqDTPk4oMxzU9k6uVbZuoorXpump",
+    "dex": "pumpswap",
+    "price_native": 6.51e-06,
+    "price_usd": 0.0007726,
+    "gain_24h_pct": 39.55,
+    "volume_24h": 270566.97,
+    "fdv": 751714.0
+  },
+  {
+    "symbol": "BOARD",
+    "name": "Call The Board",
+    "mint": "4Sbqpaa1pvn7RibuKc6caNJ77tjcQC9WuxHRnzdSpump",
+    "dex": "pumpswap",
+    "price_native": 6.951e-07,
+    "price_usd": 8.243e-05,
+    "gain_24h_pct": 36.17,
+    "volume_24h": 308420.62,
+    "fdv": 80129.0
+  },
+  {
+    "symbol": "SCRAPS",
+    "name": "SCRAPS ON SOLANA",
+    "mint": "64ieTFXDP7esG3ahCoMRgEqtt8gTM5rXdxvXrfY6pump",
+    "dex": "pumpfun",
+    "price_native": 2.344e-07,
+    "price_usd": 2.78e-05,
+    "gain_24h_pct": 7.3,
+    "volume_24h": 790.58,
+    "fdv": 27802.53
+  },
+  {
+    "symbol": "OTC",
+    "name": "OTC",
+    "mint": "MukLDtJ8Cx9DxLbeyLRSWPSposTMWuwHANbuaudpump",
+    "dex": "meteora",
+    "price_native": 164.4552,
+    "price_usd": 0.005928,
+    "gain_24h_pct": 3.95,
+    "volume_24h": 5.77,
+    "fdv": 4091021.0
+  },
+  {
+    "symbol": "PUMP",
+    "name": "PUMPKIN HEAD \ud83c\udf83",
+    "mint": "5U2xu35J4LmURGsxCPZi1ZWSBRkKExcNKkmv5Zr8pump",
+    "dex": "pumpfun",
+    "price_native": 1.482e-07,
+    "price_usd": 1.777e-05,
+    "gain_24h_pct": 1.67,
+    "volume_24h": 198.68,
+    "fdv": 17770.64
+  },
+  {
+    "symbol": "Staccana",
+    "name": "Solana Fork Staccana ",
+    "mint": "73edX6xoGY4v5y2hzuKdrUbJXLntqgmo74au1Ki1pump",
+    "dex": "raydium",
+    "price_native": 3.542e-06,
+    "price_usd": 0.0004184,
+    "gain_24h_pct": 0.03,
+    "volume_24h": 137.79,
+    "fdv": 418455.0
+  },
+  {
+    "symbol": "STORE",
+    "name": "Solana Spaces",
+    "mint": "FLJYGHpCCcfYUdzhcfHSeSd2peb5SMajNWaCsRnhpump",
+    "dex": "raydium",
+    "price_native": 7.294e-07,
+    "price_usd": 8.861e-05,
+    "gain_24h_pct": -0.54,
+    "volume_24h": 107.91,
+    "fdv": 86220.0
+  },
+  {
+    "symbol": "SSE",
+    "name": "Solana Social Explorer",
+    "mint": "H4phNbsqjV5rqk8u6FUACTLB6rNZRTAPGnBb8KXJpump",
+    "dex": "raydium",
+    "price_native": 8.098e-07,
+    "price_usd": 9.844e-05,
+    "gain_24h_pct": -1.36,
+    "volume_24h": 50.31,
+    "fdv": 98446.0
+  },
+  {
+    "symbol": "$CrepSol",
+    "name": "Crepe on Solana ",
+    "mint": "HW2B2wvyEir3iqvYbYqbHWyR7rA6DqCR3WQSy4USpump",
+    "dex": "pumpswap",
+    "price_native": 2.653e-07,
+    "price_usd": 3.188e-05,
+    "gain_24h_pct": -1.7,
+    "volume_24h": 19.28,
+    "fdv": 31878.0
+  },
+  {
+    "symbol": "$MAXBTC",
+    "name": "Max Bitcoin Solana",
+    "mint": "2mzqMhShWKobxdoQQ1b8YfNcER9LLoZWGn3WufGUpump",
+    "dex": "pumpfun",
+    "price_native": 5.769e-08,
+    "price_usd": 6.827e-06,
+    "gain_24h_pct": -1.76,
+    "volume_24h": 30.27,
+    "fdv": 6827.95
+  },
+  {
+    "symbol": "SOLANASLOTH",
+    "name": "Solana the Sloth",
+    "mint": "CE2wyDBxxi4g9WZ7tgjtfXhTJyEWBwkf6oywqNECpump",
+    "dex": "pumpswap",
+    "price_native": 4.154e-07,
+    "price_usd": 4.95e-05,
+    "gain_24h_pct": -1.8,
+    "volume_24h": 18.61,
+    "fdv": 40709.0
+  }
+]

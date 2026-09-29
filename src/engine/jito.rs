@@ -15,6 +15,15 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::constants::{create_transfer_instruction, JITO_TIP_WALLETS};
 
+pub const JITO_REGIONAL_ENDPOINTS: &[&str] = &[
+    "https://mainnet.block-engine.jito.wtf/api/v1/bundles",
+    "https://ny.mainnet.block-engine.jito.wtf/api/v1/bundles",
+    "https://amsterdam.mainnet.block-engine.jito.wtf/api/v1/bundles",
+    "https://frankfurt.mainnet.block-engine.jito.wtf/api/v1/bundles",
+    "https://tokyo.mainnet.block-engine.jito.wtf/api/v1/bundles",
+    "https://slc.mainnet.block-engine.jito.wtf/api/v1/bundles",
+];
+
 pub struct JitoClient {
     client: Client,
     block_engine_url: String,
@@ -58,7 +67,7 @@ impl JitoClient {
         Transaction::new(&[payer], message, recent_blockhash)
     }
 
-    /// Send bundle to Jito Block Engine
+    /// Send bundle to Jito Block Engine in parallel across all regional relayers
     pub async fn send_bundle(&self, tx: &Transaction) -> Result<String> {
         let serialized = bincode::serialize(tx).context("Failed to serialize transaction")?;
         let base58_tx = bs58::encode(serialized).into_string();
@@ -70,25 +79,51 @@ impl JitoClient {
             "params": [[base58_tx]]
         });
 
-        debug!("🚀 Dispatching bundle to Jito Block Engine: {}", self.block_engine_url);
+        // Collect all target endpoints including primary block_engine_url
+        let mut endpoints = vec![self.block_engine_url.as_str()];
+        for &ep in JITO_REGIONAL_ENDPOINTS {
+            if ep != self.block_engine_url.as_str() {
+                endpoints.push(ep);
+            }
+        }
 
-        let response = self
-            .client
-            .post(&self.block_engine_url)
-            .json(&payload)
-            .send()
-            .await
-            .context("Failed to send bundle HTTP request to Jito")?;
+        debug!("🚀 Dispatching bundle to {} Jito Block Engines in parallel...", endpoints.len());
 
-        let status = response.status();
-        let body = response.text().await.unwrap_or_default();
+        let mut futures = Vec::new();
+        for &ep in &endpoints {
+            let client = self.client.clone();
+            let payload = payload.clone();
+            let ep_str = ep.to_string();
+            futures.push(tokio::spawn(async move {
+                let res = client.post(&ep_str).json(&payload).send().await;
+                (ep_str, res)
+            }));
+        }
 
-        if status.is_success() {
-            info!("✅ Jito bundle accepted: {}", body);
+        let mut successful_body: Option<String> = None;
+        let mut last_err = String::new();
+
+        for fut in futures {
+            if let Ok((ep, Ok(resp))) = fut.await {
+                let status = resp.status();
+                let body = resp.text().await.unwrap_or_default();
+                if status.is_success() {
+                    debug!("✅ Accepted by {}", ep);
+                    if successful_body.is_none() {
+                        successful_body = Some(body);
+                    }
+                } else {
+                    last_err = format!("HTTP {} from {}: {}", status, ep, body);
+                }
+            }
+        }
+
+        if let Some(body) = successful_body {
+            info!("✅ Jito bundle broadcast confirmed: {}", body);
             Ok(body)
         } else {
-            error!("❌ Jito bundle rejected with status {}: {}", status, body);
-            anyhow::bail!("Jito bundle rejected (HTTP {}): {}", status, body)
+            error!("❌ All Jito block engines rejected bundle. Last err: {}", last_err);
+            anyhow::bail!("All Jito block engines rejected bundle: {}", last_err)
         }
     }
 }

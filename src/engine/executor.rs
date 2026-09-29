@@ -100,7 +100,7 @@ impl ExecutionEngine {
             "jsonrpc": "2.0",
             "id": 1,
             "method": "getSignatureStatuses",
-            "params": [[signature.to_string()], {"searchTransactionHistory": false}]
+            "params": [[signature.to_string()], {"searchTransactionHistory": true}]
         });
 
         for attempt in 1..=max_attempts {
@@ -112,7 +112,7 @@ impl ExecutionEngine {
                             let err_is_null = status.get("err").map(|e| e.is_null()).unwrap_or(false);
                             if err_is_null {
                                 let confirmation = status.get("confirmationStatus").and_then(|s| s.as_str());
-                                if confirmation == Some("confirmed") || confirmation == Some("finalized") {
+                                if confirmation == Some("processed") || confirmation == Some("confirmed") || confirmation == Some("finalized") {
                                     debug!("Signature {} confirmed on attempt {}", signature, attempt);
                                     return true;
                                 }
@@ -181,7 +181,7 @@ impl ExecutionEngine {
                 let sig = bundle_tx.signatures[0];
                 info!("📡 Bundle {} dispatched (sig: {}). Verifying on-chain confirmation...", bundle_id, sig);
 
-                let landed = self.wait_for_confirmation(&sig, 8, std::time::Duration::from_millis(400)).await;
+                let landed = self.wait_for_confirmation(&sig, 15, std::time::Duration::from_millis(400)).await;
                 if landed {
                     info!("✅ Trade confirmed on-chain in block! Registering position for {}", mint);
                     self.position_manager
@@ -228,6 +228,7 @@ impl ExecutionEngine {
                 } else {
                     100_000
                 });
+
                 let sell_ix = InstructionBuilder::build_sell_instruction(
                     &payer_pubkey,
                     &mint,
@@ -254,7 +255,7 @@ impl ExecutionEngine {
                 let sig = bundle_tx.signatures[0];
                 info!("📡 Sell bundle {} dispatched (sig: {}). Verifying on-chain confirmation...", bundle_id, sig);
 
-                let landed = self.wait_for_confirmation(&sig, 8, std::time::Duration::from_millis(400)).await;
+                let landed = self.wait_for_confirmation(&sig, 15, std::time::Duration::from_millis(400)).await;
                 if landed {
                     info!("✅ Sell confirmed on-chain for mint {}", mint);
                 } else {

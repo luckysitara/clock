@@ -20,6 +20,7 @@ pub struct BotConfig {
     pub hard_stop_loss_pct: f64,
     pub take_profit_pct: f64,
     pub dev_dump_threshold_pct: f64,
+    pub min_creator_buy_sol: f64,
     pub target_wallets: Vec<String>,
 }
 
@@ -99,6 +100,11 @@ impl BotConfig {
             .and_then(|v| v.parse().ok())
             .unwrap_or(0.20); // 20% dump triggers panic exit
 
+        let min_creator_buy_sol = env::var("MIN_CREATOR_BUY_SOL")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(0.50); // Minimum 0.50 SOL dev buy required to snipe unbacked launches
+
         // Target Top 20 Leaderboard Wallets (comma-separated or loaded from TARGET_WALLETS)
         let target_wallets = env::var("TARGET_WALLETS")
             .map(|w| {
@@ -132,6 +138,7 @@ impl BotConfig {
             hard_stop_loss_pct,
             take_profit_pct,
             dev_dump_threshold_pct,
+            min_creator_buy_sol,
             target_wallets,
         })
     }

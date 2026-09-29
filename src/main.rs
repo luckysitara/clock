@@ -58,6 +58,7 @@ async fn main() -> Result<()> {
             hard_stop_loss_pct: 0.20,
             take_profit_pct: 2.5,
             dev_dump_threshold_pct: 0.20,
+            min_creator_buy_sol: 0.50,
             target_wallets: vec![],
         }
     }));
@@ -90,6 +91,7 @@ async fn main() -> Result<()> {
     );
     info!("   Jito Block Engine:   {}", config.jito_block_engine_url);
     info!("   Target Wallets:      {} addresses", config.target_wallets.len());
+    info!("   Min Dev Buy Filter:  {} SOL (Launch Snipe Concurrence)", config.min_creator_buy_sol);
     info!("   Copy-Trade Amount:   {} SOL", config.copy_trade_amount_sol);
     info!("   Slippage Tolerance:  {} bps ({}%)", config.slippage_bps, config.slippage_bps as f64 / 100.0);
     info!("   Trailing Stop Loss:  {}%", config.trailing_stop_pct * 100.0);

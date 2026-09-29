@@ -48,6 +48,10 @@ path = "src/bin/test_live_100.rs"
 name = "sell_all"
 path = "src/bin/sell_all.rs"
 
+[[bin]]
+name = "check_position"
+path = "src/bin/check_position.rs"
+
 [lib]
 name = "clockit"
 path = "src/lib.rs"

@@ -383,6 +383,7 @@ impl YellowstoneStreamer {
                                                 };
 
                                                 // Inspect if creator bought initial tokens in the same transaction
+                                                let mut dev_bought_sol = 0.0;
                                                 for other_ix in &msg_data.instructions {
                                                     if fast_is_discriminator(&other_ix.data, BUY_DISCRIMINATOR_U64) {
                                                         if let Some(buy_pod) = PumpFunBuyPod::read_from_raw(&other_ix.data) {
@@ -390,10 +391,11 @@ impl YellowstoneStreamer {
                                                                 let m_idx = other_ix.accounts[2] as usize;
                                                                 if m_idx < account_keys.len() && account_keys[m_idx] == mint.to_bytes() {
                                                                     let dev_sol = initial_curve.apply_buy(buy_pod.amount);
+                                                                    dev_bought_sol = dev_sol.unwrap_or(0) as f64 / 1e9;
                                                                     info!(
                                                                         "🎯 Dev initial buy detected in create tx: {} tokens (~{:.4} SOL). Curve updated.",
                                                                         buy_pod.amount,
-                                                                        dev_sol.unwrap_or(0) as f64 / 1e9
+                                                                        dev_bought_sol
                                                                     );
                                                                 }
                                                             }
@@ -406,12 +408,24 @@ impl YellowstoneStreamer {
                                                     cache.insert(mint, initial_curve);
                                                 }
 
+                                                // Smart Money / Dev Concurrence Filter:
+                                                // Only snipe launch if dev put serious SOL into the curve (>= min_creator_buy_sol)
+                                                // OR if a target whale/sniper is in the creation transaction!
+                                                let is_smart_money_in_launch = matched_whale.is_some();
+                                                if dev_bought_sol < self.config.min_creator_buy_sol && !is_smart_money_in_launch {
+                                                    info!(
+                                                        "🛡️ Skipping unbacked launch [{}] {}: Dev bought only {:.4} SOL (min: {:.2} SOL) and no target snipers/whales entered.",
+                                                        view.symbol, mint, dev_bought_sol, self.config.min_creator_buy_sol
+                                                    );
+                                                    continue;
+                                                }
+
                                                 let my_sol_lamports = (self.config.copy_trade_amount_sol * 1e9) as u64;
                                                 let snipe_slippage = std::cmp::max(self.config.slippage_bps, 2500);
 
                                                 info!(
-                                                    "⚡ TRIGGERING FIRST-BLOCK SNIPE: {} SOL on [{}] Mint: {} (slippage: {} bps)",
-                                                    self.config.copy_trade_amount_sol, view.symbol, mint, snipe_slippage
+                                                    "⚡ TRIGGERING FIRST-BLOCK SNIPE: {} SOL on [{}] Mint: {} (Dev Buy: {:.4} SOL | slippage: {} bps)",
+                                                    self.config.copy_trade_amount_sol, view.symbol, mint, dev_bought_sol, snipe_slippage
                                                 );
 
                                                 let _ = self

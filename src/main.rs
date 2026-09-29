@@ -120,6 +120,11 @@ async fn main() -> Result<()> {
     // 5. Initialize In-Memory Bonding Curve Cache
     let curve_cache = Arc::new(RwLock::new(HashMap::new()));
 
+    // Recover open on-chain positions from trader wallet
+    position_manager
+        .recover_open_positions(&config.solana_rpc_url, &keypair.pubkey(), &curve_cache)
+        .await;
+
     // 6. Setup MPSC Channel for Trade Signals & Spawn Execution Worker Pool
     let (tx_trades, rx_trades) = mpsc::channel::<TradeAction>(2000);
 

@@ -1,6 +1,8 @@
+use base64::Engine;
 use log::{info, warn};
 use solana_sdk::pubkey::Pubkey;
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -148,5 +150,85 @@ impl PositionManager {
     pub async fn position_count(&self) -> usize {
         let lock = self.positions.read().await;
         lock.len()
+    }
+
+    /// Recover open token positions from on-chain wallet token accounts on startup
+    pub async fn recover_open_positions(
+        &self,
+        rpc_url: &str,
+        wallet: &Pubkey,
+        curve_cache: &Arc<RwLock<HashMap<Pubkey, crate::decoders::BondingCurveAccountPod>>>,
+    ) {
+        let client = reqwest::Client::new();
+        let payload = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getTokenAccountsByOwner",
+            "params": [
+                wallet.to_string(),
+                {"programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"},
+                {"encoding": "jsonParsed"}
+            ]
+        });
+
+        if let Ok(resp) = client.post(rpc_url).json(&payload).send().await {
+            if let Ok(json) = resp.json::<serde_json::Value>().await {
+                if let Some(accounts) = json.get("result").and_then(|r| r.get("value")).and_then(|v| v.as_array()) {
+                    for acc in accounts {
+                        if let Some(info) = acc.get("account").and_then(|a| a.get("data")).and_then(|d| d.get("parsed")).and_then(|p| p.get("info")) {
+                            let mint_str = info.get("mint").and_then(|m| m.as_str()).unwrap_or_default();
+                            let amount_str = info.get("tokenAmount").and_then(|t| t.get("amount")).and_then(|a| a.as_str()).unwrap_or("0");
+                            let token_amount: u64 = amount_str.parse().unwrap_or(0);
+
+                            if token_amount > 0 {
+                                if let Ok(mint) = Pubkey::from_str(mint_str) {
+                                    let (bonding_curve, _) = crate::constants::derive_bonding_curve(&mint);
+                                    let curve_payload = serde_json::json!({
+                                        "jsonrpc": "2.0",
+                                        "id": 1,
+                                        "method": "getAccountInfo",
+                                        "params": [
+                                            bonding_curve.to_string(),
+                                            {"encoding": "base64"}
+                                        ]
+                                    });
+                                    if let Ok(c_resp) = client.post(rpc_url).json(&curve_payload).send().await {
+                                        if let Ok(c_json) = c_resp.json::<serde_json::Value>().await {
+                                            if let Some(data_arr) = c_json.get("result").and_then(|r| r.get("value")).and_then(|v| v.get("data")).and_then(|d| d.as_array()) {
+                                                if let Some(b64) = data_arr.first().and_then(|d| d.as_str()) {
+                                                    if let Ok(bytes) = base64::engine::general_purpose::STANDARD.decode(b64) {
+                                                        if let Some(pod) = crate::decoders::BondingCurveAccountPod::read_from_account(&bytes) {
+                                                            let spot_price = pod.current_spot_price_sol();
+                                                            info!(
+                                                                "🔄 Restored active on-chain position for mint {}: {} tokens (current price: {:.10} SOL)",
+                                                                mint, token_amount, spot_price
+                                                            );
+                                                            {
+                                                                let mut cache = curve_cache.write().await;
+                                                                cache.insert(mint, pod);
+                                                            }
+                                                            let mut lock = self.positions.write().await;
+                                                            lock.insert(mint, Position {
+                                                                mint,
+                                                                entry_price_sol: spot_price,
+                                                                highest_price_sol: spot_price,
+                                                                token_balance: token_amount,
+                                                                sol_invested_lamports: 200_000_000,
+                                                                dev_wallet: Some(pod.creator),
+                                                                dev_initial_balance: 0,
+                                                            });
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

@@ -1,7 +1,8 @@
 use solana_sdk::pubkey::Pubkey;
 
 use crate::constants::{
-    BUY_DISCRIMINATOR_U64, SELL_DISCRIMINATOR_ALT_U64, SELL_DISCRIMINATOR_U64,
+    BONDING_CURVE_ACCOUNT_DISCRIMINATOR_U64, BUY_DISCRIMINATOR_U64, SELL_DISCRIMINATOR_ALT_U64,
+    SELL_DISCRIMINATOR_U64,
 };
 
 /// 1-cycle 64-bit integer discriminator matching
@@ -95,6 +96,11 @@ impl BondingCurveAccountPod {
     pub fn read_from_account(data: &[u8]) -> Option<Self> {
         // Must contain 8-byte discriminator + 41 bytes of state fields
         if data.len() < 49 {
+            return None;
+        }
+
+        let disc = unsafe { std::ptr::read_unaligned(data.as_ptr() as *const u64) };
+        if disc != BONDING_CURVE_ACCOUNT_DISCRIMINATOR_U64 {
             return None;
         }
 

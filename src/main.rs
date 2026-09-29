@@ -108,6 +108,7 @@ async fn main() -> Result<()> {
     ));
 
     let jito_client = Arc::new(JitoClient::new(config.jito_block_engine_url.clone()));
+    jito_client.spawn_prewarmer();
 
     let position_manager = Arc::new(PositionManager::new(
         config.trailing_stop_pct,

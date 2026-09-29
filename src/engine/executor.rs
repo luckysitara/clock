@@ -177,9 +177,34 @@ impl ExecutionEngine {
                     blockhash,
                 );
 
-                let bundle_id = self.jito_client.send_bundle(&bundle_tx).await?;
                 let sig = bundle_tx.signatures[0];
-                info!("📡 Bundle {} dispatched (sig: {}). Verifying on-chain confirmation...", bundle_id, sig);
+
+                // Dual-Routing: Dispatch simultaneously to Triton RPC sendTransaction + Jito Block Engines
+                if let Ok(serialized) = bincode::serialize(&bundle_tx) {
+                    let base58_tx = bs58::encode(&serialized).into_string();
+                    let rpc_payload = serde_json::json!({
+                        "jsonrpc": "2.0",
+                        "id": 1,
+                        "method": "sendTransaction",
+                        "params": [
+                            base58_tx,
+                            {
+                                "skipPreflight": true,
+                                "preflightCommitment": "processed",
+                                "encoding": "base58",
+                                "maxRetries": 0
+                            }
+                        ]
+                    });
+                    let rpc_client = self.http_client.clone();
+                    let rpc_url = self.rpc_url.clone();
+                    tokio::spawn(async move {
+                        let _ = rpc_client.post(&rpc_url).json(&rpc_payload).send().await;
+                    });
+                }
+
+                let bundle_id = self.jito_client.send_bundle(&bundle_tx).await?;
+                info!("📡 Dual-routed transaction dispatched (sig: {} | Jito: {}). Verifying on-chain confirmation...", sig, bundle_id);
 
                 let landed = self.wait_for_confirmation(&sig, 15, std::time::Duration::from_millis(400)).await;
                 if landed {
@@ -251,9 +276,34 @@ impl ExecutionEngine {
                     blockhash,
                 );
 
-                let bundle_id = self.jito_client.send_bundle(&bundle_tx).await?;
                 let sig = bundle_tx.signatures[0];
-                info!("📡 Sell bundle {} dispatched (sig: {}). Verifying on-chain confirmation...", bundle_id, sig);
+
+                // Dual-Routing for exits: Dispatch simultaneously to Triton RPC + Jito
+                if let Ok(serialized) = bincode::serialize(&bundle_tx) {
+                    let base58_tx = bs58::encode(&serialized).into_string();
+                    let rpc_payload = serde_json::json!({
+                        "jsonrpc": "2.0",
+                        "id": 1,
+                        "method": "sendTransaction",
+                        "params": [
+                            base58_tx,
+                            {
+                                "skipPreflight": true,
+                                "preflightCommitment": "processed",
+                                "encoding": "base58",
+                                "maxRetries": 0
+                            }
+                        ]
+                    });
+                    let rpc_client = self.http_client.clone();
+                    let rpc_url = self.rpc_url.clone();
+                    tokio::spawn(async move {
+                        let _ = rpc_client.post(&rpc_url).json(&rpc_payload).send().await;
+                    });
+                }
+
+                let bundle_id = self.jito_client.send_bundle(&bundle_tx).await?;
+                info!("📡 Dual-routed sell dispatched (sig: {} | Jito: {}). Verifying on-chain confirmation...", sig, bundle_id);
 
                 let landed = self.wait_for_confirmation(&sig, 15, std::time::Duration::from_millis(400)).await;
                 if landed {

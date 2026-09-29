@@ -44,6 +44,10 @@ path = "src/bin/backtest_top_tokens.rs"
 name = "test_live_100"
 path = "src/bin/test_live_100.rs"
 
+[[bin]]
+name = "sell_all"
+path = "src/bin/sell_all.rs"
+
 [lib]
 name = "clockit"
 path = "src/lib.rs"

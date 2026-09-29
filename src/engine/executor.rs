@@ -208,7 +208,7 @@ impl ExecutionEngine {
 
                 let landed = self.wait_for_confirmation(&sig, 15, std::time::Duration::from_millis(400)).await;
                 if landed {
-                    info!("✅ Trade confirmed on-chain in block! Registering position for {}", mint);
+                    info!("🎉 TRADE CONFIRMED ON-CHAIN! Tx: https://solscan.io/tx/{} | Mint: {} | Tokens: {} | Sol Spent: {:.4} SOL", sig, mint, calc.tokens_out, sol_amount_lamports as f64 / 1e9);
                     self.position_manager
                         .add_position(Position {
                             mint,
@@ -307,7 +307,7 @@ impl ExecutionEngine {
 
                 let landed = self.wait_for_confirmation(&sig, 15, std::time::Duration::from_millis(400)).await;
                 if landed {
-                    info!("✅ Sell confirmed on-chain for mint {}", mint);
+                    info!("🎉 SELL CONFIRMED ON-CHAIN! Tx: https://solscan.io/tx/{} | Mint: {} | Tokens Sold: {} | Min SOL: {:.4} SOL", sig, mint, token_amount, calc.min_sol_output as f64 / 1e9);
                 } else {
                     warn!("⚠️ Sell bundle for mint {} did not land yet. Monitoring position.", mint);
                 }

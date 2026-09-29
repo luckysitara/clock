@@ -68,7 +68,7 @@ fn test_zero_allocation_create_parsing() {
     assert_eq!(view.name, name);
     assert_eq!(view.symbol, symbol);
     assert_eq!(view.uri, uri);
-    assert_eq!(view.creator.to_bytes(), creator);
+    assert_eq!(view.creator.unwrap().to_bytes(), creator);
 }
 
 #[test]
@@ -80,6 +80,7 @@ fn test_bonding_curve_math() {
         real_sol_reserves: 0,
         token_total_supply: 1_000_000_000_000_000,
         complete: false,
+        creator: solana_sdk::pubkey::Pubkey::default(),
     };
 
     // Buy with 1 SOL (1_000_000_000 lamports) and 5% slippage (500 bps)
@@ -104,4 +105,29 @@ fn test_dynamic_tip_engine() {
 
     // Massive profit: capped at max tip
     assert_eq!(engine.calculate_optimal_tip(200_000_000), Some(50_000_000));
+}
+
+#[test]
+fn test_slippage_and_apply_buy() {
+    let mut curve = BondingCurveAccountPod {
+        virtual_token_reserves: 1_073_000_000_000_000,
+        virtual_sol_reserves: 30_000_000_000, // 30 SOL
+        real_token_reserves: 793_100_000_000_000,
+        real_sol_reserves: 0,
+        token_total_supply: 1_000_000_000_000_000,
+        complete: false,
+        creator: solana_sdk::pubkey::Pubkey::default(),
+    };
+
+    // Dev buys 50_000_000_000_000 tokens in create tx
+    let dev_cost = curve.apply_buy(50_000_000_000_000).expect("Dev buy failed");
+    assert!(dev_cost > 0);
+    assert!(curve.virtual_sol_reserves > 30_000_000_000);
+    assert_eq!(curve.virtual_token_reserves, 1_073_000_000_000_000 - 50_000_000_000_000);
+
+    // Calculate our snipe buy with 0.20 SOL and 25% slippage
+    let snipe_res = curve.calculate_buy_output(200_000_000, 2500).expect("Snipe buy failed");
+    assert!(snipe_res.tokens_out > 0);
+    // max_sol_cost has 5% buffer over 0.20 SOL = 0.21 SOL
+    assert_eq!(snipe_res.max_sol_cost, 210_000_000);
 }

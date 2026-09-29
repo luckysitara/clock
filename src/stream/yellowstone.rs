@@ -241,7 +241,7 @@ impl YellowstoneStreamer {
                     let matched_whale = whale_filter.matches_any(&account_keys);
 
                     // Scan instructions
-                    for ix in msg_data.instructions {
+                    for ix in &msg_data.instructions {
                         let data = &ix.data;
 
                         // 1. BUY INSTRUCTION
@@ -283,12 +283,13 @@ impl YellowstoneStreamer {
                                                                 self.config.copy_trade_amount_sol, mint
                                                             );
 
+                                                            let copy_slippage = std::cmp::max(self.config.slippage_bps, 1500);
                                                             let _ = self
                                                                 .trade_sender
                                                                 .send(TradeAction::Buy {
                                                                     mint,
                                                                     sol_amount_lamports: my_sol_lamports,
-                                                                    slippage_bps: self.config.slippage_bps,
+                                                                    slippage_bps: copy_slippage,
                                                                     curve_state: curve,
                                                                     dev_wallet: None,
                                                                 })
@@ -371,7 +372,7 @@ impl YellowstoneStreamer {
                                         if !self.position_manager.has_position(&mint).await {
                                             let current_invested = self.position_manager.total_invested_sol().await;
                                             if current_invested + self.config.copy_trade_amount_sol <= self.config.max_position_sol {
-                                                let initial_curve = BondingCurveAccountPod {
+                                                let mut initial_curve = BondingCurveAccountPod {
                                                     virtual_token_reserves: INITIAL_VIRTUAL_TOKEN_RESERVES,
                                                     virtual_sol_reserves: INITIAL_VIRTUAL_SOL_RESERVES,
                                                     real_token_reserves: INITIAL_REAL_TOKEN_RESERVES,
@@ -381,16 +382,36 @@ impl YellowstoneStreamer {
                                                     creator,
                                                 };
 
+                                                // Inspect if creator bought initial tokens in the same transaction
+                                                for other_ix in &msg_data.instructions {
+                                                    if fast_is_discriminator(&other_ix.data, BUY_DISCRIMINATOR_U64) {
+                                                        if let Some(buy_pod) = PumpFunBuyPod::read_from_raw(&other_ix.data) {
+                                                            if other_ix.accounts.len() > 2 {
+                                                                let m_idx = other_ix.accounts[2] as usize;
+                                                                if m_idx < account_keys.len() && account_keys[m_idx] == mint.to_bytes() {
+                                                                    let dev_sol = initial_curve.apply_buy(buy_pod.amount);
+                                                                    info!(
+                                                                        "🎯 Dev initial buy detected in create tx: {} tokens (~{:.4} SOL). Curve updated.",
+                                                                        buy_pod.amount,
+                                                                        dev_sol.unwrap_or(0) as f64 / 1e9
+                                                                    );
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
                                                 {
                                                     let mut cache = self.curve_cache.write().await;
                                                     cache.insert(mint, initial_curve);
                                                 }
 
                                                 let my_sol_lamports = (self.config.copy_trade_amount_sol * 1e9) as u64;
+                                                let snipe_slippage = std::cmp::max(self.config.slippage_bps, 2500);
 
                                                 info!(
-                                                    "⚡ TRIGGERING FIRST-BLOCK SNIPE: {} SOL on [{}] Mint: {}",
-                                                    self.config.copy_trade_amount_sol, view.symbol, mint
+                                                    "⚡ TRIGGERING FIRST-BLOCK SNIPE: {} SOL on [{}] Mint: {} (slippage: {} bps)",
+                                                    self.config.copy_trade_amount_sol, view.symbol, mint, snipe_slippage
                                                 );
 
                                                 let _ = self
@@ -398,7 +419,7 @@ impl YellowstoneStreamer {
                                                     .send(TradeAction::Buy {
                                                         mint,
                                                         sol_amount_lamports: my_sol_lamports,
-                                                        slippage_bps: self.config.slippage_bps,
+                                                        slippage_bps: snipe_slippage,
                                                         curve_state: initial_curve,
                                                         dev_wallet: Some(creator),
                                                     })

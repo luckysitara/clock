@@ -46,20 +46,60 @@ impl BondingCurveAccountPod {
             return None;
         }
 
-        // Apply slippage to max SOL cost
-        // e.g. 500 bps = 5% extra SOL willingness
+        // Apply slippage tolerance to minimum tokens out:
+        // When buying, slippage means we are willing to accept fewer tokens for our SOL
+        // if the price rises before our transaction is mined.
+        // This guarantees that the required SOL cost will not exceed max_sol_cost on-chain.
+        let tokens_out_min = ((tokens_out_u64 as u128)
+            .checked_mul(10_000)?
+            .checked_div(10_000 + slippage_bps as u128)?) as u64;
+
+        if tokens_out_min == 0 {
+            return None;
+        }
+
+        // Max SOL cost has a 5% protocol fee/rounding buffer over sol_in_lamports
         let max_sol_cost = ((sol_in_lamports as u128)
-            .checked_mul(10_000 + slippage_bps as u128)?
+            .checked_mul(10_500)?
             .checked_div(10_000)?) as u64;
 
         let effective_price_sol = (sol_in_lamports as f64 / 1_000_000_000.0)
-            / (tokens_out_u64 as f64 / 1_000_000.0);
+            / (tokens_out_min as f64 / 1_000_000.0);
 
         Some(CurveCalculationResult {
-            tokens_out: tokens_out_u64,
+            tokens_out: tokens_out_min,
             max_sol_cost,
             effective_price_sol,
         })
+    }
+
+    /// Apply a buy order (e.g. from the creator in the create tx) to update the bonding curve reserves in-memory
+    pub fn apply_buy(&mut self, token_amount: u64) -> Option<u64> {
+        if self.complete || token_amount == 0 {
+            return None;
+        }
+        let x = self.virtual_sol_reserves as u128;
+        let y = self.virtual_token_reserves as u128;
+        let k = x.checked_mul(y)?;
+
+        let delta_y = token_amount as u128;
+        if delta_y >= y {
+            return None;
+        }
+        let new_y = y.checked_sub(delta_y)?;
+        let new_x = k.checked_div(new_y)?.checked_add(1)?;
+        let sol_cost = new_x.checked_sub(x)? as u64;
+
+        self.virtual_token_reserves = self.virtual_token_reserves.saturating_sub(token_amount);
+        self.real_token_reserves = self.real_token_reserves.saturating_sub(token_amount);
+        self.virtual_sol_reserves = self.virtual_sol_reserves.saturating_add(sol_cost);
+        self.real_sol_reserves = self.real_sol_reserves.saturating_add(sol_cost);
+
+        if self.real_token_reserves == 0 {
+            self.complete = true;
+        }
+
+        Some(sol_cost)
     }
 
     /// Calculate the SOL output and min SOL floor (with slippage) for a Sell order

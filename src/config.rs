@@ -104,12 +104,12 @@ impl BotConfig {
         let min_creator_buy_sol = env::var("MIN_CREATOR_BUY_SOL")
             .ok()
             .and_then(|v| v.parse().ok())
-            .unwrap_or(0.50); // Minimum 0.50 SOL dev buy required to snipe unbacked launches
+            .unwrap_or(0.20); // Minimum 0.20 SOL dev buy required to snipe unbacked launches
 
         let min_whale_buy_sol = env::var("MIN_WHALE_BUY_SOL")
             .ok()
             .and_then(|v| v.parse().ok())
-            .unwrap_or(1.0); // Minimum 1.0 SOL whale buy required to trigger copy-trade
+            .unwrap_or(0.60); // Minimum 0.60 SOL whale buy required to trigger copy-trade
 
         // Target Top 20 Leaderboard Wallets (comma-separated or loaded from TARGET_WALLETS)
         let target_wallets = env::var("TARGET_WALLETS")

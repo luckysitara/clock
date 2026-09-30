@@ -58,8 +58,8 @@ async fn main() -> Result<()> {
             hard_stop_loss_pct: 0.20,
             take_profit_pct: 2.5,
             dev_dump_threshold_pct: 0.20,
-            min_creator_buy_sol: 0.50,
-            min_whale_buy_sol: 1.0,
+            min_creator_buy_sol: 0.20,
+            min_whale_buy_sol: 0.60,
             target_wallets: vec![],
         }
     }));

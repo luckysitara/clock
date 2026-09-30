@@ -2,7 +2,7 @@ use crate::constants::{
     associated_token_program_id, derive_associated_bonding_curve, derive_associated_user_token,
     derive_bonding_curve, derive_bonding_curve_v2, derive_creator_vault, derive_fee_config,
     derive_global_volume_accumulator, derive_user_volume_accumulator,
-    get_random_buyback_fee_recipient, pump_fee_program_id, spl_token_program_id,
+    get_random_buyback_fee_recipient, pump_fee_program_id,
     system_program_id, BUY_DISCRIMINATOR_BYTES, PUMPFUN_EVENT_AUTHORITY, PUMPFUN_FEE_RECIPIENT,
     PUMPFUN_GLOBAL, PUMPFUN_PROGRAM, SELL_DISCRIMINATOR_BYTES,
 };
@@ -16,10 +16,14 @@ pub struct InstructionBuilder;
 
 impl InstructionBuilder {
     /// Create Idempotent Associated Token Account (ATA) Instruction
-    pub fn create_ata_idempotent(payer: &Pubkey, wallet: &Pubkey, mint: &Pubkey) -> Instruction {
-        let (ata, _) = derive_associated_user_token(wallet, mint);
+    pub fn create_ata_idempotent(
+        payer: &Pubkey,
+        wallet: &Pubkey,
+        mint: &Pubkey,
+        token_program: &Pubkey,
+    ) -> Instruction {
+        let (ata, _) = derive_associated_user_token(wallet, mint, token_program);
         let ata_program = associated_token_program_id();
-        let token_program = spl_token_program_id();
         let sys_prog = system_program_id();
 
         // Account order: payer, ata, wallet, mint, system_program, token_program
@@ -29,7 +33,7 @@ impl InstructionBuilder {
             AccountMeta::new_readonly(*wallet, false),
             AccountMeta::new_readonly(*mint, false),
             AccountMeta::new_readonly(sys_prog, false),
-            AccountMeta::new_readonly(token_program, false),
+            AccountMeta::new_readonly(*token_program, false),
         ];
 
         // 1 = CreateIdempotent instruction
@@ -43,18 +47,18 @@ impl InstructionBuilder {
         creator: &Pubkey,
         amount: u64,
         max_sol_cost: u64,
+        token_program: &Pubkey,
     ) -> Instruction {
         let pump_program = Pubkey::from_str(PUMPFUN_PROGRAM).unwrap();
         let global = Pubkey::from_str(PUMPFUN_GLOBAL).unwrap();
         let fee_recipient = Pubkey::from_str(PUMPFUN_FEE_RECIPIENT).unwrap();
         let event_authority = Pubkey::from_str(PUMPFUN_EVENT_AUTHORITY).unwrap();
-        let token_program = spl_token_program_id();
         let sys_prog = system_program_id();
         let protocol_fee_program = pump_fee_program_id();
 
         let (bonding_curve, _) = derive_bonding_curve(mint);
-        let (associated_bonding_curve, _) = derive_associated_bonding_curve(&bonding_curve, mint);
-        let (associated_user, _) = derive_associated_user_token(user, mint);
+        let (associated_bonding_curve, _) = derive_associated_bonding_curve(&bonding_curve, mint, token_program);
+        let (associated_user, _) = derive_associated_user_token(user, mint, token_program);
         let (creator_vault, _) = derive_creator_vault(creator);
         let (global_vol_acc, _) = derive_global_volume_accumulator();
         let (user_vol_acc, _) = derive_user_volume_accumulator(user);
@@ -77,7 +81,7 @@ impl InstructionBuilder {
             AccountMeta::new(associated_user, false),
             AccountMeta::new(*user, true),
             AccountMeta::new_readonly(sys_prog, false),
-            AccountMeta::new_readonly(token_program, false),
+            AccountMeta::new_readonly(*token_program, false),
             AccountMeta::new(creator_vault, false),
             AccountMeta::new_readonly(event_authority, false),
             AccountMeta::new_readonly(pump_program, false),
@@ -100,18 +104,18 @@ impl InstructionBuilder {
         creator: &Pubkey,
         amount: u64,
         min_sol_output: u64,
+        token_program: &Pubkey,
     ) -> Instruction {
         let pump_program = Pubkey::from_str(PUMPFUN_PROGRAM).unwrap();
         let global = Pubkey::from_str(PUMPFUN_GLOBAL).unwrap();
         let fee_recipient = Pubkey::from_str(PUMPFUN_FEE_RECIPIENT).unwrap();
         let event_authority = Pubkey::from_str(PUMPFUN_EVENT_AUTHORITY).unwrap();
-        let token_program = spl_token_program_id();
         let sys_prog = system_program_id();
         let protocol_fee_program = pump_fee_program_id();
 
         let (bonding_curve, _) = derive_bonding_curve(mint);
-        let (associated_bonding_curve, _) = derive_associated_bonding_curve(&bonding_curve, mint);
-        let (associated_user, _) = derive_associated_user_token(user, mint);
+        let (associated_bonding_curve, _) = derive_associated_bonding_curve(&bonding_curve, mint, token_program);
+        let (associated_user, _) = derive_associated_user_token(user, mint, token_program);
         let (creator_vault, _) = derive_creator_vault(creator);
         let (fee_config, _) = derive_fee_config();
         let (bonding_curve_v2, _) = derive_bonding_curve_v2(mint);
@@ -132,7 +136,7 @@ impl InstructionBuilder {
             AccountMeta::new(*user, true),
             AccountMeta::new_readonly(sys_prog, false),
             AccountMeta::new(creator_vault, false),
-            AccountMeta::new_readonly(token_program, false),
+            AccountMeta::new_readonly(*token_program, false),
             AccountMeta::new_readonly(event_authority, false),
             AccountMeta::new_readonly(pump_program, false),
             AccountMeta::new_readonly(fee_config, false),

@@ -200,6 +200,7 @@ impl YellowstoneStreamer {
                                             slippage_bps: self.config.slippage_bps,
                                             curve_state: curve_pod,
                                             is_panic,
+                                            token_program: Some(pos.token_program),
                                         })
                                         .await;
                                 }
@@ -304,6 +305,17 @@ impl YellowstoneStreamer {
                                                             );
 
                                                             let copy_slippage = std::cmp::max(self.config.slippage_bps, 1500);
+                                                            let token_prog = if ix.accounts.len() > 8 {
+                                                                let token_program_idx = ix.accounts[8] as usize;
+                                                                if token_program_idx < account_keys.len() {
+                                                                    Some(Pubkey::new_from_array(account_keys[token_program_idx]))
+                                                                } else {
+                                                                    Some(crate::constants::spl_token_2022_program_id())
+                                                                }
+                                                            } else {
+                                                                Some(crate::constants::spl_token_2022_program_id())
+                                                            };
+
                                                             let _ = self
                                                                 .trade_sender
                                                                 .send(TradeAction::Buy {
@@ -312,6 +324,7 @@ impl YellowstoneStreamer {
                                                                     slippage_bps: copy_slippage,
                                                                     curve_state: curve,
                                                                     dev_wallet: None,
+                                                                    token_program: token_prog,
                                                                 })
                                                                 .await;
                                                         }
@@ -346,9 +359,10 @@ impl YellowstoneStreamer {
                                             .check_dev_dump(&mint, &signer, sell_pod.amount)
                                             .await
                                         {
+                                            let (bonding_curve, _) = crate::constants::derive_bonding_curve(&mint);
                                             let curve_state = {
                                                 let cache = self.curve_cache.read().await;
-                                                cache.get(&mint).copied()
+                                                cache.get(&mint).or_else(|| cache.get(&bonding_curve)).copied()
                                             };
 
                                             if let Some(curve) = curve_state {
@@ -360,6 +374,7 @@ impl YellowstoneStreamer {
                                                         slippage_bps: self.config.slippage_bps,
                                                         curve_state: curve,
                                                         is_panic: true,
+                                                        token_program: Some(pos.token_program),
                                                     })
                                                     .await;
                                             }
@@ -456,6 +471,7 @@ impl YellowstoneStreamer {
                                                         slippage_bps: snipe_slippage,
                                                         curve_state: initial_curve,
                                                         dev_wallet: Some(creator),
+                                                        token_program: Some(crate::constants::spl_token_2022_program_id()),
                                                     })
                                                     .await;
                                             } else {

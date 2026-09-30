@@ -55,8 +55,9 @@ pub fn derive_bonding_curve_v2(mint: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(&[b"bonding-curve-v2", mint.as_ref()], &pump_program)
 }
 
-pub fn derive_associated_bonding_curve(bonding_curve: &Pubkey, mint: &Pubkey) -> (Pubkey, u8) {
-    let token_program = spl_token_program_id();
+pub const TOKEN_2022_PROGRAM: &str = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
+
+pub fn derive_associated_bonding_curve(bonding_curve: &Pubkey, mint: &Pubkey, token_program: &Pubkey) -> (Pubkey, u8) {
     let ata_program = associated_token_program_id();
     Pubkey::find_program_address(
         &[
@@ -68,8 +69,7 @@ pub fn derive_associated_bonding_curve(bonding_curve: &Pubkey, mint: &Pubkey) ->
     )
 }
 
-pub fn derive_associated_user_token(wallet: &Pubkey, mint: &Pubkey) -> (Pubkey, u8) {
-    let token_program = spl_token_program_id();
+pub fn derive_associated_user_token(wallet: &Pubkey, mint: &Pubkey, token_program: &Pubkey) -> (Pubkey, u8) {
     let ata_program = associated_token_program_id();
     Pubkey::find_program_address(
         &[wallet.as_ref(), token_program.as_ref(), mint.as_ref()],
@@ -126,6 +126,11 @@ pub fn pump_fee_program_id() -> Pubkey {
 #[inline(always)]
 pub fn spl_token_program_id() -> Pubkey {
     Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap()
+}
+
+#[inline(always)]
+pub fn spl_token_2022_program_id() -> Pubkey {
+    Pubkey::from_str(TOKEN_2022_PROGRAM).unwrap()
 }
 
 #[inline(always)]

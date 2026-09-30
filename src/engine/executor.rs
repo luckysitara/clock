@@ -28,6 +28,7 @@ pub enum TradeAction {
         slippage_bps: u64,
         curve_state: BondingCurveAccountPod,
         dev_wallet: Option<Pubkey>,
+        token_program: Option<Pubkey>,
     },
     Sell {
         mint: Pubkey,
@@ -35,6 +36,7 @@ pub enum TradeAction {
         slippage_bps: u64,
         curve_state: BondingCurveAccountPod,
         is_panic: bool,
+        token_program: Option<Pubkey>,
     },
 }
 
@@ -139,17 +141,23 @@ impl ExecutionEngine {
                 slippage_bps,
                 curve_state,
                 dev_wallet,
+                token_program,
             } => {
                 let calc = curve_state
                     .calculate_buy_output(sol_amount_lamports, slippage_bps)
                     .context("Curve calculation failed or curve is complete")?;
 
+                let token_prog = token_program.unwrap_or_else(|| {
+                    crate::constants::spl_token_2022_program_id()
+                });
+
                 info!(
-                    "🚀 Executing BUY for mint: {} | Tokens: {} | Max SOL: {} | Est Price: {} SOL",
+                    "🚀 Executing BUY for mint: {} | Tokens: {} | Max SOL: {} | Est Price: {} SOL | Token Prog: {}",
                     mint,
                     calc.tokens_out,
                     calc.max_sol_cost as f64 / 1e9,
-                    calc.effective_price_sol
+                    calc.effective_price_sol,
+                    token_prog
                 );
 
                 let creator = dev_wallet.unwrap_or(curve_state.creator);
@@ -158,13 +166,14 @@ impl ExecutionEngine {
                 let compute_cu = InstructionBuilder::set_compute_unit_limit(200_000);
                 let compute_price = InstructionBuilder::set_compute_unit_price(100_000);
                 let create_ata_ix =
-                    InstructionBuilder::create_ata_idempotent(&payer_pubkey, &payer_pubkey, &mint);
+                    InstructionBuilder::create_ata_idempotent(&payer_pubkey, &payer_pubkey, &mint, &token_prog);
                 let buy_ix = InstructionBuilder::build_buy_instruction(
                     &payer_pubkey,
                     &mint,
                     &creator,
                     calc.tokens_out,
                     calc.max_sol_cost,
+                    &token_prog,
                 );
 
                 let instructions = vec![compute_cu, compute_price, create_ata_ix, buy_ix];
@@ -218,6 +227,7 @@ impl ExecutionEngine {
                             sol_invested_lamports: sol_amount_lamports,
                             dev_wallet,
                             dev_initial_balance: 0,
+                            token_program: token_prog,
                         })
                         .await;
                 } else {
@@ -231,18 +241,24 @@ impl ExecutionEngine {
                 slippage_bps,
                 curve_state,
                 is_panic,
+                token_program,
             } => {
                 let calc = curve_state
                     .calculate_sell_output(token_amount, slippage_bps)
                     .context("Curve sell calculation failed")?;
 
+                let token_prog = token_program.unwrap_or_else(|| {
+                    crate::constants::spl_token_2022_program_id()
+                });
+
                 info!(
-                    "⚠️ Executing SELL {} for mint: {} | Tokens: {} | Min SOL Out: {} | Est Price: {} SOL",
+                    "⚠️ Executing SELL {} for mint: {} | Tokens: {} | Min SOL Out: {} | Est Price: {} SOL | Token Prog: {}",
                     if is_panic { "(PANIC DUMP FRONT-RUN)" } else { "" },
                     mint,
                     token_amount,
                     calc.min_sol_output as f64 / 1e9,
-                    calc.effective_price_sol
+                    calc.effective_price_sol,
+                    token_prog
                 );
 
                 let creator = curve_state.creator;
@@ -260,6 +276,7 @@ impl ExecutionEngine {
                     &creator,
                     token_amount,
                     calc.min_sol_output,
+                    &token_prog,
                 );
 
                 let instructions = vec![compute_cu, compute_price, sell_ix];

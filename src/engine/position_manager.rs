@@ -15,6 +15,7 @@ pub struct Position {
     pub sol_invested_lamports: u64,
     pub dev_wallet: Option<Pubkey>,
     pub dev_initial_balance: u64,
+    pub token_program: Pubkey,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -227,6 +228,7 @@ impl PositionManager {
                                                                 sol_invested_lamports: 200_000_000,
                                                                 dev_wallet: Some(pod.creator),
                                                                 dev_initial_balance: 0,
+                                                                token_program: crate::constants::spl_token_2022_program_id(),
                                                             });
                                                         }
                                                     }

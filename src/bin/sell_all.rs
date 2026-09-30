@@ -159,6 +159,7 @@ async fn main() -> Result<()> {
             slippage_bps: 1000, // 10% slippage floor
             curve_state: curve_pod,
             is_panic: false,
+            token_program: None,
         };
 
         println!("   Broadcasting Jito + RPC Dual-Routed Sell Transaction...");

@@ -255,6 +255,14 @@ impl YellowstoneStreamer {
                                         whale, whale_sol_spent
                                     );
 
+                                    if whale_sol_spent < self.config.min_whale_buy_sol {
+                                        info!(
+                                            "🛡️ Skipping low-conviction whale buy [{}]: Spent only {:.4} SOL (< {:.2} SOL floor)",
+                                            whale, whale_sol_spent, self.config.min_whale_buy_sol
+                                        );
+                                        continue;
+                                    }
+
                                     // Mint is typically account index #2 in Buy instruction
                                     if ix.accounts.len() > 2 {
                                         let mint_idx = ix.accounts[2] as usize;
@@ -445,12 +453,13 @@ impl YellowstoneStreamer {
 
                                                 // Smart Money / Dev Concurrence Filter:
                                                 // Only snipe launch if dev put serious SOL into the curve (>= min_creator_buy_sol)
-                                                // OR if a target whale/sniper is in the creation transaction!
-                                                let is_smart_money_in_launch = matched_whale.is_some();
-                                                if dev_bought_sol < self.config.min_creator_buy_sol && !is_smart_money_in_launch {
+                                                // OR if a target whale/sniper entered with >= min_whale_buy_sol!
+                                                let is_smart_money_in_launch = matched_whale.is_some() && dev_bought_sol >= self.config.min_whale_buy_sol;
+                                                let is_dev_committed = dev_bought_sol >= self.config.min_creator_buy_sol;
+                                                if !is_smart_money_in_launch && !is_dev_committed {
                                                     info!(
-                                                        "🛡️ Skipping unbacked launch [{}] {}: Dev bought only {:.4} SOL (min: {:.2} SOL) and no target snipers/whales entered.",
-                                                        view.symbol, mint, dev_bought_sol, self.config.min_creator_buy_sol
+                                                        "🛡️ Skipping unbacked launch [{}] {}: Buy size {:.4} SOL below thresholds (dev min: {:.2}, whale min: {:.2})",
+                                                        view.symbol, mint, dev_bought_sol, self.config.min_creator_buy_sol, self.config.min_whale_buy_sol
                                                     );
                                                     continue;
                                                 }

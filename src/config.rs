@@ -21,6 +21,7 @@ pub struct BotConfig {
     pub take_profit_pct: f64,
     pub dev_dump_threshold_pct: f64,
     pub min_creator_buy_sol: f64,
+    pub min_whale_buy_sol: f64,
     pub target_wallets: Vec<String>,
 }
 
@@ -105,6 +106,11 @@ impl BotConfig {
             .and_then(|v| v.parse().ok())
             .unwrap_or(0.50); // Minimum 0.50 SOL dev buy required to snipe unbacked launches
 
+        let min_whale_buy_sol = env::var("MIN_WHALE_BUY_SOL")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(1.0); // Minimum 1.0 SOL whale buy required to trigger copy-trade
+
         // Target Top 20 Leaderboard Wallets (comma-separated or loaded from TARGET_WALLETS)
         let target_wallets = env::var("TARGET_WALLETS")
             .map(|w| {
@@ -139,6 +145,7 @@ impl BotConfig {
             take_profit_pct,
             dev_dump_threshold_pct,
             min_creator_buy_sol,
+            min_whale_buy_sol,
             target_wallets,
         })
     }

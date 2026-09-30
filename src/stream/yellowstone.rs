@@ -191,7 +191,7 @@ impl YellowstoneStreamer {
                                     .on_price_update(&pubkey, current_price)
                                     .await
                                 {
-                                    let is_panic = reason == ExitReason::DevDumpPanic || reason == ExitReason::HardStopLoss;
+                                    let is_panic = reason == ExitReason::DevDumpPanic || reason == ExitReason::HardStopLoss || reason == ExitReason::TrailingStop;
                                     let _ = self
                                         .trade_sender
                                         .send(TradeAction::Sell {

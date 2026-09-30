@@ -228,6 +228,7 @@ impl ExecutionEngine {
                             dev_wallet,
                             dev_initial_balance: 0,
                             token_program: token_prog,
+                            is_selling: false,
                         })
                         .await;
                 } else {
@@ -251,18 +252,24 @@ impl ExecutionEngine {
                     crate::constants::spl_token_2022_program_id()
                 });
 
+                // In panic dump or stop-loss, use 1 lamport floor so Pump.fun AMM NEVER fails with Custom 6003 (TooLittleSolReceived)
+                let min_sol_out = if is_panic {
+                    1u64
+                } else {
+                    calc.min_sol_output
+                };
+
                 info!(
-                    "⚠️ Executing SELL {} for mint: {} | Tokens: {} | Min SOL Out: {} | Est Price: {} SOL | Token Prog: {}",
-                    if is_panic { "(PANIC DUMP FRONT-RUN)" } else { "" },
+                    "⚠️ Executing SELL {} for mint: {} | Tokens: {} | Min SOL Floor: {} SOL | Est Price: {} SOL | Token Prog: {}",
+                    if is_panic { "(PANIC / STOP-LOSS - 1 LAMPORT FLOOR)" } else { "" },
                     mint,
                     token_amount,
-                    calc.min_sol_output as f64 / 1e9,
+                    min_sol_out as f64 / 1e9,
                     calc.effective_price_sol,
                     token_prog
                 );
 
                 let creator = curve_state.creator;
-
                 let compute_cu = InstructionBuilder::set_compute_unit_limit(150_000);
                 let compute_price = InstructionBuilder::set_compute_unit_price(if is_panic {
                     1_000_000
@@ -270,63 +277,77 @@ impl ExecutionEngine {
                     100_000
                 });
 
-                let sell_ix = InstructionBuilder::build_sell_instruction(
-                    &payer_pubkey,
-                    &mint,
-                    &creator,
-                    token_amount,
-                    calc.min_sol_output,
-                    &token_prog,
-                );
+                let mut confirmed = false;
+                for attempt in 1..=3 {
+                    let blockhash = self.blockhash_cache.get_latest().await;
+                    let sell_min_floor = if attempt > 1 || is_panic { 1u64 } else { min_sol_out };
+                    let sell_ix = InstructionBuilder::build_sell_instruction(
+                        &payer_pubkey,
+                        &mint,
+                        &creator,
+                        token_amount,
+                        sell_min_floor,
+                        &token_prog,
+                    );
 
-                let instructions = vec![compute_cu, compute_price, sell_ix];
-                let tip = if is_panic {
-                    self.tip_engine.max_tip_lamports
-                } else {
-                    self.tip_engine.default_tip()
-                };
+                    let instructions = vec![compute_cu.clone(), compute_price.clone(), sell_ix];
+                    let tip = if is_panic || attempt > 1 {
+                        self.tip_engine.max_tip_lamports
+                    } else {
+                        self.tip_engine.default_tip()
+                    };
 
-                let bundle_tx = self.jito_client.build_tip_bundle(
-                    &self.keypair,
-                    instructions,
-                    tip,
-                    blockhash,
-                );
+                    let bundle_tx = self.jito_client.build_tip_bundle(
+                        &self.keypair,
+                        instructions,
+                        tip,
+                        blockhash,
+                    );
 
-                let sig = bundle_tx.signatures[0];
+                    let sig = bundle_tx.signatures[0];
 
-                // Dual-Routing for exits: Dispatch simultaneously to Triton RPC + Jito
-                if let Ok(serialized) = bincode::serialize(&bundle_tx) {
-                    let base58_tx = bs58::encode(&serialized).into_string();
-                    let rpc_payload = serde_json::json!({
-                        "jsonrpc": "2.0",
-                        "id": 1,
-                        "method": "sendTransaction",
-                        "params": [
-                            base58_tx,
-                            {
-                                "skipPreflight": true,
-                                "preflightCommitment": "processed",
-                                "encoding": "base58",
-                                "maxRetries": 0
-                            }
-                        ]
-                    });
-                    let rpc_client = self.http_client.clone();
-                    let rpc_url = self.rpc_url.clone();
-                    tokio::spawn(async move {
-                        let _ = rpc_client.post(&rpc_url).json(&rpc_payload).send().await;
-                    });
+                    // Dual-Routing for exits: Dispatch simultaneously to Triton RPC + Jito
+                    if let Ok(serialized) = bincode::serialize(&bundle_tx) {
+                        let base58_tx = bs58::encode(&serialized).into_string();
+                        let rpc_payload = serde_json::json!({
+                            "jsonrpc": "2.0",
+                            "id": 1,
+                            "method": "sendTransaction",
+                            "params": [
+                                base58_tx,
+                                {
+                                    "skipPreflight": true,
+                                    "preflightCommitment": "processed",
+                                    "encoding": "base58",
+                                    "maxRetries": 0
+                                }
+                            ]
+                        });
+                        let rpc_client = self.http_client.clone();
+                        let rpc_url = self.rpc_url.clone();
+                        tokio::spawn(async move {
+                            let _ = rpc_client.post(&rpc_url).json(&rpc_payload).send().await;
+                        });
+                    }
+
+                    let bundle_id = self.jito_client.send_bundle(&bundle_tx).await?;
+                    info!("📡 Dual-routed sell dispatched [attempt {}/3] (sig: {} | Jito: {})...", attempt, sig, bundle_id);
+
+                    let landed = self.wait_for_confirmation(&sig, 12, std::time::Duration::from_millis(350)).await;
+                    if landed {
+                        info!("🎉 SELL CONFIRMED ON-CHAIN! Tx: https://solscan.io/tx/{} | Mint: {} | Tokens Sold: {} | Min Floor: {:.4} SOL", sig, mint, token_amount, sell_min_floor as f64 / 1e9);
+                        self.position_manager.remove_position(&mint).await;
+                        confirmed = true;
+                        break;
+                    } else {
+                        warn!("⚠️ Sell attempt {} for mint {} did not land. Retrying immediately with 1-lamport floor...", attempt, mint);
+                        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+                    }
                 }
 
-                let bundle_id = self.jito_client.send_bundle(&bundle_tx).await?;
-                info!("📡 Dual-routed sell dispatched (sig: {} | Jito: {}). Verifying on-chain confirmation...", sig, bundle_id);
-
-                let landed = self.wait_for_confirmation(&sig, 15, std::time::Duration::from_millis(400)).await;
-                if landed {
-                    info!("🎉 SELL CONFIRMED ON-CHAIN! Tx: https://solscan.io/tx/{} | Mint: {} | Tokens Sold: {} | Min SOL: {:.4} SOL", sig, mint, token_amount, calc.min_sol_output as f64 / 1e9);
-                } else {
-                    warn!("⚠️ Sell bundle for mint {} did not land yet. Monitoring position.", mint);
+                if !confirmed {
+                    error!("❌ All 3 sell attempts failed for mint {}. Resetting is_selling flag for next price update retry.", mint);
+                    self.position_manager.unmark_selling(&mint).await;
                 }
             }
         }

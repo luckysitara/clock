@@ -16,6 +16,7 @@ pub struct Position {
     pub dev_wallet: Option<Pubkey>,
     pub dev_initial_balance: u64,
     pub token_program: Pubkey,
+    pub is_selling: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -75,6 +76,10 @@ impl PositionManager {
 
         if let Some(mint) = matched_mint {
             if let Some(pos) = lock.get_mut(&mint) {
+                if pos.is_selling {
+                    return None;
+                }
+
                 if current_price_sol > pos.highest_price_sol {
                     pos.highest_price_sol = current_price_sol;
                 }
@@ -83,37 +88,37 @@ impl PositionManager {
                 let trailing_stop_price = pos.highest_price_sol * (1.0 - self.trailing_stop_pct);
                 let tp_price = pos.entry_price_sol * self.take_profit_pct;
 
-            // 1. Take Profit
-            if current_price_sol >= tp_price {
-                info!(
-                    "💰 Take profit hit for {}: price reached {} SOL (entry: {})",
-                    mint, current_price_sol, pos.entry_price_sol
-                );
-                let removed = lock.remove(&mint).unwrap();
-                return Some((removed, ExitReason::TakeProfit));
-            }
-            // 2. Hard Stop Loss (cut dead drops immediately)
-            else if current_price_sol <= hard_stop_price {
-                warn!(
-                    "🛑 Hard stop loss hit for {}: price dropped to {} SOL <= floor {} SOL (-{:.1}%)",
-                    mint, current_price_sol, hard_stop_price, self.hard_stop_loss_pct * 100.0
-                );
-                let removed = lock.remove(&mint).unwrap();
-                return Some((removed, ExitReason::HardStopLoss));
-            }
-            // 3. Trailing Stop (lock in gains after initial +30% pump)
-            else if current_price_sol <= trailing_stop_price && pos.highest_price_sol > pos.entry_price_sol * 1.30 {
-                warn!(
-                    "📉 Trailing stop hit for {}: price dropped from peak {} to {} SOL",
-                    mint, pos.highest_price_sol, current_price_sol
-                );
-                let removed = lock.remove(&mint).unwrap();
-                return Some((removed, ExitReason::TrailingStop));
+                // 1. Take Profit
+                if current_price_sol >= tp_price {
+                    info!(
+                        "💰 Take profit hit for {}: price reached {} SOL (entry: {})",
+                        mint, current_price_sol, pos.entry_price_sol
+                    );
+                    pos.is_selling = true;
+                    return Some((pos.clone(), ExitReason::TakeProfit));
+                }
+                // 2. Hard Stop Loss (cut dead drops immediately)
+                else if current_price_sol <= hard_stop_price {
+                    warn!(
+                        "🛑 Hard stop loss hit for {}: price dropped to {} SOL <= floor {} SOL (-{:.1}%)",
+                        mint, current_price_sol, hard_stop_price, self.hard_stop_loss_pct * 100.0
+                    );
+                    pos.is_selling = true;
+                    return Some((pos.clone(), ExitReason::HardStopLoss));
+                }
+                // 3. Trailing Stop (lock in gains after initial +30% pump)
+                else if current_price_sol <= trailing_stop_price && pos.highest_price_sol > pos.entry_price_sol * 1.30 {
+                    warn!(
+                        "📉 Trailing stop hit for {}: price dropped from peak {} to {} SOL",
+                        mint, pos.highest_price_sol, current_price_sol
+                    );
+                    pos.is_selling = true;
+                    return Some((pos.clone(), ExitReason::TrailingStop));
+                }
             }
         }
+        None
     }
-    None
-}
 
     /// Check if transaction is a dev dump that requires immediate panic front-run
     pub async fn check_dev_dump(
@@ -123,7 +128,10 @@ impl PositionManager {
         sell_amount: u64,
     ) -> Option<Position> {
         let mut lock = self.positions.write().await;
-        if let Some(pos) = lock.get(mint) {
+        if let Some(pos) = lock.get_mut(mint) {
+            if pos.is_selling {
+                return None;
+            }
             if let Some(dev) = pos.dev_wallet {
                 if dev == *signer {
                     let threshold = (pos.dev_initial_balance as f64 * self.dev_dump_threshold_pct) as u64;
@@ -132,12 +140,27 @@ impl PositionManager {
                             "🚨 DEV DUMP DETECTED for {}: dev sold {} tokens! Triggering PANIC SELL!",
                             mint, sell_amount
                         );
-                        return lock.remove(mint);
+                        pos.is_selling = true;
+                        return Some(pos.clone());
                     }
                 }
             }
         }
         None
+    }
+
+    /// Remove position once sell is confirmed on-chain
+    pub async fn remove_position(&self, mint: &Pubkey) -> Option<Position> {
+        let mut lock = self.positions.write().await;
+        lock.remove(mint)
+    }
+
+    /// Reset is_selling flag if a sell transaction completely fails or drops
+    pub async fn unmark_selling(&self, mint: &Pubkey) {
+        let mut lock = self.positions.write().await;
+        if let Some(pos) = lock.get_mut(mint) {
+            pos.is_selling = false;
+        }
     }
 
     /// Get position copy
@@ -229,6 +252,7 @@ impl PositionManager {
                                                                 dev_wallet: Some(pod.creator),
                                                                 dev_initial_balance: 0,
                                                                 token_program: crate::constants::spl_token_2022_program_id(),
+                                                                is_selling: false,
                                                             });
                                                         }
                                                     }

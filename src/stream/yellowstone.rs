@@ -264,13 +264,33 @@ impl YellowstoneStreamer {
                                             if !self.position_manager.has_position(&mint).await {
                                                 let current_invested = self.position_manager.total_invested_sol().await;
                                                 if current_invested + self.config.copy_trade_amount_sol <= self.config.max_position_sol {
-                                                    // Get current bonding curve state
+                                                    // Get current bonding curve state (by mint, bonding curve PDA, or RPC fallback)
+                                                    let (bonding_curve, _) = crate::constants::derive_bonding_curve(&mint);
                                                     let curve_state = {
                                                         let cache = self.curve_cache.read().await;
-                                                        cache.get(&mint).copied()
+                                                        cache.get(&mint).or_else(|| cache.get(&bonding_curve)).copied()
                                                     };
 
-                                                    if let Some(curve) = curve_state {
+                                                    let curve = match curve_state {
+                                                        Some(c) => Some(c),
+                                                        None => {
+                                                            let rpc = solana_client::nonblocking::rpc_client::RpcClient::new(self.config.solana_rpc_url.clone());
+                                                            if let Ok(acc) = rpc.get_account(&bonding_curve).await {
+                                                                if let Some(pod) = BondingCurveAccountPod::read_from_account(&acc.data) {
+                                                                    let mut cache = self.curve_cache.write().await;
+                                                                    cache.insert(mint, pod);
+                                                                    cache.insert(bonding_curve, pod);
+                                                                    Some(pod)
+                                                                } else {
+                                                                    None
+                                                                }
+                                                            } else {
+                                                                None
+                                                            }
+                                                        }
+                                                    };
+
+                                                    if let Some(curve) = curve {
                                                         if !curve.complete {
                                                             let my_sol_lamports = (self
                                                                 .config

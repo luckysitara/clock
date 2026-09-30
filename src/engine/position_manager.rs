@@ -61,16 +61,26 @@ impl PositionManager {
     }
 
     /// Check price update against Take Profit, Hard Stop Loss, and Trailing Stop
-    pub async fn on_price_update(&self, mint: &Pubkey, current_price_sol: f64) -> Option<(Position, ExitReason)> {
+    pub async fn on_price_update(&self, curve_or_mint: &Pubkey, current_price_sol: f64) -> Option<(Position, ExitReason)> {
         let mut lock = self.positions.write().await;
-        if let Some(pos) = lock.get_mut(mint) {
-            if current_price_sol > pos.highest_price_sol {
-                pos.highest_price_sol = current_price_sol;
+        let matched_mint = lock.iter().find_map(|(mint, _)| {
+            let (bonding_curve, _) = crate::constants::derive_bonding_curve(mint);
+            if mint == curve_or_mint || &bonding_curve == curve_or_mint {
+                Some(*mint)
+            } else {
+                None
             }
+        });
 
-            let hard_stop_price = pos.entry_price_sol * (1.0 - self.hard_stop_loss_pct);
-            let trailing_stop_price = pos.highest_price_sol * (1.0 - self.trailing_stop_pct);
-            let tp_price = pos.entry_price_sol * self.take_profit_pct;
+        if let Some(mint) = matched_mint {
+            if let Some(pos) = lock.get_mut(&mint) {
+                if current_price_sol > pos.highest_price_sol {
+                    pos.highest_price_sol = current_price_sol;
+                }
+
+                let hard_stop_price = pos.entry_price_sol * (1.0 - self.hard_stop_loss_pct);
+                let trailing_stop_price = pos.highest_price_sol * (1.0 - self.trailing_stop_pct);
+                let tp_price = pos.entry_price_sol * self.take_profit_pct;
 
             // 1. Take Profit
             if current_price_sol >= tp_price {
@@ -78,7 +88,7 @@ impl PositionManager {
                     "💰 Take profit hit for {}: price reached {} SOL (entry: {})",
                     mint, current_price_sol, pos.entry_price_sol
                 );
-                let removed = lock.remove(mint).unwrap();
+                let removed = lock.remove(&mint).unwrap();
                 return Some((removed, ExitReason::TakeProfit));
             }
             // 2. Hard Stop Loss (cut dead drops immediately)
@@ -87,7 +97,7 @@ impl PositionManager {
                     "🛑 Hard stop loss hit for {}: price dropped to {} SOL <= floor {} SOL (-{:.1}%)",
                     mint, current_price_sol, hard_stop_price, self.hard_stop_loss_pct * 100.0
                 );
-                let removed = lock.remove(mint).unwrap();
+                let removed = lock.remove(&mint).unwrap();
                 return Some((removed, ExitReason::HardStopLoss));
             }
             // 3. Trailing Stop (lock in gains after initial +30% pump)
@@ -96,12 +106,13 @@ impl PositionManager {
                     "📉 Trailing stop hit for {}: price dropped from peak {} to {} SOL",
                     mint, pos.highest_price_sol, current_price_sol
                 );
-                let removed = lock.remove(mint).unwrap();
+                let removed = lock.remove(&mint).unwrap();
                 return Some((removed, ExitReason::TrailingStop));
             }
         }
-        None
     }
+    None
+}
 
     /// Check if transaction is a dev dump that requires immediate panic front-run
     pub async fn check_dev_dump(

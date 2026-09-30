@@ -1,0 +1,908 @@
+{
+  "generated_at_utc": "2026-09-29T14:50:00Z",
+  "total_ranked": 405,
+  "top_100": [
+    "F7LqQscxh7NK8S3AJaEZ7vryxvQbqKksQAZKtVgJYwmE",
+    "GePaAUXD4XyCSZnzUjLwFrcWM1rJHtT7powVZPJ6Xjft",
+    "6A59APPsPXCBbMZJsAKfMSf1tiXnYFxWM4Ho3b78dAeP",
+    "FEUa5TK22AyRyyjKpd2bCx7se1Eczmt7AFxdS6dUfHz4",
+    "1UTzmbt1c3NuQB6i7ZRf5PKxqyTFo1mpgb1P6xQ5JgU",
+    "J1owsFZnwNeuQRf3pRADoD83wgvFihS5jbRupgSTqGFn",
+    "CASHUTaewCTUqa6j2SzD6vgBMvMLsNjdpuBYGTxWDBmi",
+    "AveoQfoU36guB1zG1e5f1GdCjcuhrQ7yR7PcNY87aJgT",
+    "HA8WhZJGKTi8Mw2osEuWhk56yoonKg4bv4uq9VuN23UU",
+    "7eWkMyY6WSEJRLVMiBmk4TqVK8ZZQ4Ekggc64CJK8riW",
+    "jjr4mHC41Qcp7h7RZH8HJw8foPAAjooNgAKRXNpvfFf",
+    "Cz9758hb1SwVY7eQyxK6Lb6xnFbeU5UmkrkzqbRQx9es",
+    "7GDtvN4bbae5hSCCE74AyqzTGzfKXURiTsmAXcFBXcEM",
+    "6jibmh4BVCkeco8priecRAgwd3KjbLEQipUbJvqTx5Xf",
+    "9GdYLZoGMeaoy54E6cq3L2nSs67AfAHtqEihmC7ppBvK",
+    "BeiwKfM82CannyPLAcqgKZ7xXFwyXGnWVTAa6En2UXuJ",
+    "2aVCVbbUSt4ZAcBDo5vb7jwLupTmSGL3BsLH7K3G3Vfk",
+    "56S29mZ3wqvw8hATuUUFqKhGcSGYFASRRFNT38W8q7G3",
+    "G9sQPg9Eimkwe72w1xH1tPUc9RFNuK6Ufw5AyWy6j7ob",
+    "7FPqg7MpJwvGneBPvkBrCDjAvZhFnAvoiUw9LF91nsN",
+    "HXHdwdtQMLA38ZkYMxg5TLKR8FzT7cBs9KCRC4KLc8BN",
+    "89KMbaD7gCTPdWrDiPWGt8BZ9aha2ivQ4Tr62ieGXaJa",
+    "57Uwjtsge45YRJ1Zxp4s2EQjr4JcAMo4jZfj8HFHjJZx",
+    "BLkhywQtcUTthKSzoDsCkQsprYMvptU8v7MteTPpaAJq",
+    "62tFn6KLQ5jvpn14Xp4o9gDtYYePGPWTmiWDFyjnfg7q",
+    "E25GxaCoPpkWtcm9iP1Ak2ARBj3tBYWeWYzWYNdNavgS",
+    "HETKCvwFTRUyQCo6QYpkdasRmLVJBmx64D8LQtURZC1b",
+    "5y4cufHXt2U8FygeAjDcxFaepGHDGPs7MwtKwhtwyFZ5",
+    "39FSoeiXBxbiajTQ3RpdD51Pvc9ZGfY65XHiV6oiDWKd",
+    "Cgj1fCntUQKHiehSJN62poCmb9nkm4jQSh1pYGnFUCXz",
+    "AMjHaXVa7tP6fpmPEc45i2JXPLsNQtspx6s2CEbNyDf3",
+    "B1iWjGQYwpRJarjBmm47pU38VPiF6gyDgqF3E5weaLdE",
+    "5hsgaNzovd3evi8zB3Ba7fy45tcBsvAKZEByfMvfyy1r",
+    "D5LTxbTqDpQ425UW6M1vHJAPkSMbEbrc79te3H5KNQ9E",
+    "8JLN2NsVQGyskGJmvKUL1KBP3QffZjKUxSP2ooLKwu6E",
+    "omegoMAe1AMY5MFKQQr3JwXVy8F4eCvmBAfcpo8XAfq",
+    "4cgRqMDwBMYy74dCWzm7c462EJ7m6MqH2EQaHBo2cvo1",
+    "AQdBYZNy3BZ1vouGUjA1w9Ay7aq7kH5UQSuh4LQWKotY",
+    "35dLhRujmtWVEVX3m6tVddwsDhds8w8yfcwP8dkGgixQ",
+    "D9TJSn3jpuSZPzUxwhFUAHEC1wVf5vbfEsMPNvKaZC4h",
+    "FEi5asjoWXLxTdqYs6KLFqPzPPxQum6sR8bwCmcQhA2C",
+    "9nU9s4kJ7t3u5rzdo5hZiAcqcPCvh5gLr6wxJbZemnMK",
+    "HWS3AbLBcztP1WodLrW68BoT7cnAZQjB8VVfrEvJy7L5",
+    "AjH6Yo3JagLny13cdGqqGznMVrdKGG5tkUaar1429BHj",
+    "36xf9CLGarCrP57ebCLU4ivx3zHuJY5vcFauN8PYh4q5",
+    "7pGVjSNR1nLrEuwMdetHq6x21m5az3ip6cfrZGu2F27s",
+    "4hMVTtJzEmQRVr47ez1YZMHRifktREZ8NJWnxYFT3Hnx",
+    "4G5hDh8x3smA6M6S23RaBugRgnTZkbPemqb4srbPRBvs",
+    "3d44VNXRzEA8i9V5wAQwpgTCDDEdKMejTBs3ViVHY5VC",
+    "GheUg8x9VKAE3feVazgmssNXPCxJgoWoTRKcVBMF2Rr7",
+    "8m317p7NkitDoC1mPo9mdNfSnXoKMvSEq2A37q8yv6rR",
+    "8yuAKencKY8QK7DqPqUcKWqkBkbKCpsKukP7CLpUjLzj",
+    "B1eZdHcPUMFRDzBxmxoFrw2d9QoPVRkWcLVAMviArKAZ",
+    "4oEpb7DBxWMBYJtCeaVXAEneWCS1JzEKv9RpREcX4EBa",
+    "8tULGhv7Ze72Sms4LzfikrVbJsoUXdoVriPkVSEoyco9",
+    "4LhoCMN8QeS6ZsfUNYkwGGhGmDNoXrgF9h85puPMPGBL",
+    "J3ED3AbktAJKBtCGJex5r79bPAosuXoGngx7VyjksBeg",
+    "9EK1ALNCTYTfDaLAHqQRtESZnWaCg58VRqV7zter5QBD",
+    "8cjABctJ2t2oLtjhCXePTayDtpyhNMoF2ZMwrS2wqBQr",
+    "DnS4DxW56NybXQCy5o4DYVG7q4zLdN9LZimPfDiFQ52",
+    "Egk3vQF1uVd8kFVDGDLapT7LF8TAwZzHy6dQteQa9w9M",
+    "HL5bWaivfa34gozURpuwaWKEjJFBvGpojJng4oGHt5zm",
+    "455GAdpfXpKXCw5VvtFKsEeKkrkzh7vFio9WysRQMJ5o",
+    "WMm6Gs9BfFmHHnaDagEQTL551We9LxsJRLAto3oCuMS",
+    "TmH4G7eTEV9k6R4PZehGNVUJ2jMdTPSSmdef9M68QGy",
+    "GDPserevLo76QMGLAdNNxB4gHUadnu65QEwV5L1ohyNk",
+    "CzBfNAvEZH7bfdHa6YCJszP2wwdTvQu1D1hx2Zy9u6P3",
+    "33dRiw43r1WtDz7AAqnTqPmn97gLy8uQFnc8bWnc4m3d",
+    "2Y44QyELgLZyKDR4rgibvwTZATBnKxstSkwpufx3nFek",
+    "68FQ21HrtuD2TuCvPn1DchVZVCw6Mde2rAQBDagStyAd",
+    "J2uxjXBwynMKU2HATTCAK5QojhcxcCuW3FBuKh2bpySx",
+    "82udUKe6jydqx4rQnaRFrDrAs9hhGH7QUoeB1sbH4v3t",
+    "GgDmkUUJnVK8m1SN4Mim6v9dZoiRgAQnSyYmtwG18LRp",
+    "GhJ4DhSKiewqgV4W34BZPDptdiV3o15xAG4cc6VmFjUz",
+    "4axPNXczDq2CZdCwb4kMTm8uR7M63TWdS1FXTmeu3fx1",
+    "JAssyHK2D77SLcYax7W8gpotCrQkCtmPNw39Hqg4jKfw",
+    "8uTTvwkgmsfVN4mMd7xPyuXKnfSwexpZC1dSDQ33SMc",
+    "AULvvhcZcFcd6ErMZUcbaATdtYg39a8Xespu8vcknZsf",
+    "FBQ84t8WsA4mdQ2tMGf6zBG5VkySEX5MRvSKJyPuPmx5",
+    "9rmpNCCxe817Yqq2f3ErqczNZ5qRmnoZbJcQZsD8fiBY",
+    "bH5U1zJpeeSjz6JzJdtdLpLcUJHfV1G7PUXcUPrW3Tw",
+    "E7ykLVMMYSxssBRi44oCq1fNxWySEfyJi7gGnMGRw2CY",
+    "4o4Cz2DLhnQY9M33BFUZZwiucTNA6E4Pv9A3K85k6g9e",
+    "F5EhA1gJVTNhS43bbxQjLb8uGM5WW5kBRzNuRmF2T1db",
+    "4xd3Y2qvX43wwfLupdQVsE5ZTpnhXmpn8Dmf4Hufkj9n",
+    "3WRdSMEgaB8kHdhaRkA3HBQThCxsUgbrZN239mKJrVDh",
+    "BQjrN5SJVoSj3xHTqwkMFp9J6bf7ixKTkqBE6wvxB1tg",
+    "FpPg7fKai7c1qWi1jpMkAwWa35gx6fJ2PxcyH2QZPqjH",
+    "EfpEm2rrQNkSs7Akqw83pYgjheyrtcyWZKcsqvqWX8Am",
+    "7Gthq3qpCyMYdvLmdYSZhKUCnuq2X9ubN9Ra1n6ivwsv",
+    "2eoxLVCtRsW3YjPXKftUVTXaurk33fMSW42fgn5es1p2",
+    "9M3BZ7UGqWe6XSu18aeFYk64DNbVYYQ3gkaLztXwBgAG",
+    "ADxqNxNwYDyV7KcdmTPYyTpecadXRCPpN3p8VU55cpqB",
+    "AKrcLcfG859eWcRAodxHnX1ZLkWhfE7EtbQU1wjjprja",
+    "6oBTTYwa3r3KUiSLuwxkU9c85A9cXCDwWF5YnnEqgL54",
+    "4ECvHKKYKjy6rzadcoVihdftX1Z6wMp3iWeAdmvUz7Kh",
+    "GA4L9UrCiaSux9xaTktUbcQRuwUj2gCF7KiomPh9jC3n",
+    "GNNHFJ8vVXQEXdEawn8QBFzkkvymBRwW1rvCdJXsHaZy",
+    "g6xJ3mgk4ggmgvFacQKVo6L6zAtoNzm5devmXSBZxEi",
+    "hhGVr9yVsDDZ5WeU58eid3fuheXztwVoQZWhWUWsmPX"
+  ],
+  "details": [
+    {
+      "rank": 1,
+      "address": "F7LqQscxh7NK8S3AJaEZ7vryxvQbqKksQAZKtVgJYwmE",
+      "graduated_tokens_won": 7,
+      "total_sol_deployed": 16.2193,
+      "max_single_buy_sol": 3.0481,
+      "total_trades": 7
+    },
+    {
+      "rank": 2,
+      "address": "GePaAUXD4XyCSZnzUjLwFrcWM1rJHtT7powVZPJ6Xjft",
+      "graduated_tokens_won": 7,
+      "total_sol_deployed": 7.1452,
+      "max_single_buy_sol": 3.182,
+      "total_trades": 7
+    },
+    {
+      "rank": 3,
+      "address": "6A59APPsPXCBbMZJsAKfMSf1tiXnYFxWM4Ho3b78dAeP",
+      "graduated_tokens_won": 6,
+      "total_sol_deployed": 10.6636,
+      "max_single_buy_sol": 4.5932,
+      "total_trades": 6
+    },
+    {
+      "rank": 4,
+      "address": "FEUa5TK22AyRyyjKpd2bCx7se1Eczmt7AFxdS6dUfHz4",
+      "graduated_tokens_won": 6,
+      "total_sol_deployed": 6.0705,
+      "max_single_buy_sol": 1.0134,
+      "total_trades": 6
+    },
+    {
+      "rank": 5,
+      "address": "1UTzmbt1c3NuQB6i7ZRf5PKxqyTFo1mpgb1P6xQ5JgU",
+      "graduated_tokens_won": 6,
+      "total_sol_deployed": 5.2809,
+      "max_single_buy_sol": 1.2296,
+      "total_trades": 6
+    },
+    {
+      "rank": 6,
+      "address": "J1owsFZnwNeuQRf3pRADoD83wgvFihS5jbRupgSTqGFn",
+      "graduated_tokens_won": 5,
+      "total_sol_deployed": 17.8411,
+      "max_single_buy_sol": 3.613,
+      "total_trades": 5
+    },
+    {
+      "rank": 7,
+      "address": "CASHUTaewCTUqa6j2SzD6vgBMvMLsNjdpuBYGTxWDBmi",
+      "graduated_tokens_won": 4,
+      "total_sol_deployed": 1.2099,
+      "max_single_buy_sol": 0.3056,
+      "total_trades": 4
+    },
+    {
+      "rank": 8,
+      "address": "AveoQfoU36guB1zG1e5f1GdCjcuhrQ7yR7PcNY87aJgT",
+      "graduated_tokens_won": 3,
+      "total_sol_deployed": 65.0162,
+      "max_single_buy_sol": 21.673,
+      "total_trades": 3
+    },
+    {
+      "rank": 9,
+      "address": "HA8WhZJGKTi8Mw2osEuWhk56yoonKg4bv4uq9VuN23UU",
+      "graduated_tokens_won": 3,
+      "total_sol_deployed": 65.0162,
+      "max_single_buy_sol": 21.673,
+      "total_trades": 3
+    },
+    {
+      "rank": 10,
+      "address": "7eWkMyY6WSEJRLVMiBmk4TqVK8ZZQ4Ekggc64CJK8riW",
+      "graduated_tokens_won": 3,
+      "total_sol_deployed": 64.2218,
+      "max_single_buy_sol": 21.4082,
+      "total_trades": 3
+    },
+    {
+      "rank": 11,
+      "address": "jjr4mHC41Qcp7h7RZH8HJw8foPAAjooNgAKRXNpvfFf",
+      "graduated_tokens_won": 3,
+      "total_sol_deployed": 64.2218,
+      "max_single_buy_sol": 21.4082,
+      "total_trades": 3
+    },
+    {
+      "rank": 12,
+      "address": "Cz9758hb1SwVY7eQyxK6Lb6xnFbeU5UmkrkzqbRQx9es",
+      "graduated_tokens_won": 3,
+      "total_sol_deployed": 64.1019,
+      "max_single_buy_sol": 21.3682,
+      "total_trades": 3
+    },
+    {
+      "rank": 13,
+      "address": "7GDtvN4bbae5hSCCE74AyqzTGzfKXURiTsmAXcFBXcEM",
+      "graduated_tokens_won": 3,
+      "total_sol_deployed": 64.1019,
+      "max_single_buy_sol": 21.3682,
+      "total_trades": 3
+    },
+    {
+      "rank": 14,
+      "address": "6jibmh4BVCkeco8priecRAgwd3KjbLEQipUbJvqTx5Xf",
+      "graduated_tokens_won": 3,
+      "total_sol_deployed": 63.4567,
+      "max_single_buy_sol": 21.1531,
+      "total_trades": 3
+    },
+    {
+      "rank": 15,
+      "address": "9GdYLZoGMeaoy54E6cq3L2nSs67AfAHtqEihmC7ppBvK",
+      "graduated_tokens_won": 3,
+      "total_sol_deployed": 63.4567,
+      "max_single_buy_sol": 21.1531,
+      "total_trades": 3
+    },
+    {
+      "rank": 16,
+      "address": "BeiwKfM82CannyPLAcqgKZ7xXFwyXGnWVTAa6En2UXuJ",
+      "graduated_tokens_won": 3,
+      "total_sol_deployed": 13.0903,
+      "max_single_buy_sol": 1.3658,
+      "total_trades": 11
+    },
+    {
+      "rank": 17,
+      "address": "2aVCVbbUSt4ZAcBDo5vb7jwLupTmSGL3BsLH7K3G3Vfk",
+      "graduated_tokens_won": 3,
+      "total_sol_deployed": 15.1385,
+      "max_single_buy_sol": 6.4222,
+      "total_trades": 3
+    },
+    {
+      "rank": 18,
+      "address": "56S29mZ3wqvw8hATuUUFqKhGcSGYFASRRFNT38W8q7G3",
+      "graduated_tokens_won": 3,
+      "total_sol_deployed": 2.6047,
+      "max_single_buy_sol": 0.8893,
+      "total_trades": 3
+    },
+    {
+      "rank": 19,
+      "address": "G9sQPg9Eimkwe72w1xH1tPUc9RFNuK6Ufw5AyWy6j7ob",
+      "graduated_tokens_won": 3,
+      "total_sol_deployed": 1.8284,
+      "max_single_buy_sol": 0.6095,
+      "total_trades": 3
+    },
+    {
+      "rank": 20,
+      "address": "7FPqg7MpJwvGneBPvkBrCDjAvZhFnAvoiUw9LF91nsN",
+      "graduated_tokens_won": 3,
+      "total_sol_deployed": 0.8304,
+      "max_single_buy_sol": 0.358,
+      "total_trades": 3
+    },
+    {
+      "rank": 21,
+      "address": "HXHdwdtQMLA38ZkYMxg5TLKR8FzT7cBs9KCRC4KLc8BN",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 43.0688,
+      "max_single_buy_sol": 21.5351,
+      "total_trades": 2
+    },
+    {
+      "rank": 22,
+      "address": "89KMbaD7gCTPdWrDiPWGt8BZ9aha2ivQ4Tr62ieGXaJa",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 43.0584,
+      "max_single_buy_sol": 21.5299,
+      "total_trades": 2
+    },
+    {
+      "rank": 23,
+      "address": "57Uwjtsge45YRJ1Zxp4s2EQjr4JcAMo4jZfj8HFHjJZx",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 42.8628,
+      "max_single_buy_sol": 21.4321,
+      "total_trades": 2
+    },
+    {
+      "rank": 24,
+      "address": "BLkhywQtcUTthKSzoDsCkQsprYMvptU8v7MteTPpaAJq",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 42.7214,
+      "max_single_buy_sol": 21.3614,
+      "total_trades": 2
+    },
+    {
+      "rank": 25,
+      "address": "62tFn6KLQ5jvpn14Xp4o9gDtYYePGPWTmiWDFyjnfg7q",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 42.301,
+      "max_single_buy_sol": 21.1512,
+      "total_trades": 2
+    },
+    {
+      "rank": 26,
+      "address": "E25GxaCoPpkWtcm9iP1Ak2ARBj3tBYWeWYzWYNdNavgS",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 40.724,
+      "max_single_buy_sol": 20.3627,
+      "total_trades": 2
+    },
+    {
+      "rank": 27,
+      "address": "HETKCvwFTRUyQCo6QYpkdasRmLVJBmx64D8LQtURZC1b",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 40.6146,
+      "max_single_buy_sol": 20.308,
+      "total_trades": 2
+    },
+    {
+      "rank": 28,
+      "address": "5y4cufHXt2U8FygeAjDcxFaepGHDGPs7MwtKwhtwyFZ5",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 3.713,
+      "max_single_buy_sol": 1.926,
+      "total_trades": 2
+    },
+    {
+      "rank": 29,
+      "address": "39FSoeiXBxbiajTQ3RpdD51Pvc9ZGfY65XHiV6oiDWKd",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 3.6861,
+      "max_single_buy_sol": 1.9949,
+      "total_trades": 2
+    },
+    {
+      "rank": 30,
+      "address": "Cgj1fCntUQKHiehSJN62poCmb9nkm4jQSh1pYGnFUCXz",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 3.6715,
+      "max_single_buy_sol": 2.0158,
+      "total_trades": 2
+    },
+    {
+      "rank": 31,
+      "address": "AMjHaXVa7tP6fpmPEc45i2JXPLsNQtspx6s2CEbNyDf3",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 3.6571,
+      "max_single_buy_sol": 2.0013,
+      "total_trades": 2
+    },
+    {
+      "rank": 32,
+      "address": "B1iWjGQYwpRJarjBmm47pU38VPiF6gyDgqF3E5weaLdE",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 3.657,
+      "max_single_buy_sol": 2.0051,
+      "total_trades": 2
+    },
+    {
+      "rank": 33,
+      "address": "5hsgaNzovd3evi8zB3Ba7fy45tcBsvAKZEByfMvfyy1r",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 3.6563,
+      "max_single_buy_sol": 2.0005,
+      "total_trades": 2
+    },
+    {
+      "rank": 34,
+      "address": "D5LTxbTqDpQ425UW6M1vHJAPkSMbEbrc79te3H5KNQ9E",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 3.39,
+      "max_single_buy_sol": 1.7057,
+      "total_trades": 2
+    },
+    {
+      "rank": 35,
+      "address": "8JLN2NsVQGyskGJmvKUL1KBP3QffZjKUxSP2ooLKwu6E",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 3.0773,
+      "max_single_buy_sol": 2.9667,
+      "total_trades": 2
+    },
+    {
+      "rank": 36,
+      "address": "omegoMAe1AMY5MFKQQr3JwXVy8F4eCvmBAfcpo8XAfq",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 2.1045,
+      "max_single_buy_sol": 1.0555,
+      "total_trades": 2
+    },
+    {
+      "rank": 37,
+      "address": "4cgRqMDwBMYy74dCWzm7c462EJ7m6MqH2EQaHBo2cvo1",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 0.6825,
+      "max_single_buy_sol": 0.5095,
+      "total_trades": 2
+    },
+    {
+      "rank": 38,
+      "address": "AQdBYZNy3BZ1vouGUjA1w9Ay7aq7kH5UQSuh4LQWKotY",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 0.5651,
+      "max_single_buy_sol": 0.3845,
+      "total_trades": 2
+    },
+    {
+      "rank": 39,
+      "address": "35dLhRujmtWVEVX3m6tVddwsDhds8w8yfcwP8dkGgixQ",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 0.554,
+      "max_single_buy_sol": 0.377,
+      "total_trades": 2
+    },
+    {
+      "rank": 40,
+      "address": "D9TJSn3jpuSZPzUxwhFUAHEC1wVf5vbfEsMPNvKaZC4h",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 29.4591,
+      "max_single_buy_sol": 22.374,
+      "total_trades": 2
+    },
+    {
+      "rank": 41,
+      "address": "FEi5asjoWXLxTdqYs6KLFqPzPPxQum6sR8bwCmcQhA2C",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 22.5504,
+      "max_single_buy_sol": 22.5504,
+      "total_trades": 1
+    },
+    {
+      "rank": 42,
+      "address": "9nU9s4kJ7t3u5rzdo5hZiAcqcPCvh5gLr6wxJbZemnMK",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 21.4051,
+      "max_single_buy_sol": 21.4051,
+      "total_trades": 1
+    },
+    {
+      "rank": 43,
+      "address": "HWS3AbLBcztP1WodLrW68BoT7cnAZQjB8VVfrEvJy7L5",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 20.8655,
+      "max_single_buy_sol": 20.8655,
+      "total_trades": 1
+    },
+    {
+      "rank": 44,
+      "address": "AjH6Yo3JagLny13cdGqqGznMVrdKGG5tkUaar1429BHj",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 20.8655,
+      "max_single_buy_sol": 20.8655,
+      "total_trades": 1
+    },
+    {
+      "rank": 45,
+      "address": "36xf9CLGarCrP57ebCLU4ivx3zHuJY5vcFauN8PYh4q5",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 20.8655,
+      "max_single_buy_sol": 20.8655,
+      "total_trades": 1
+    },
+    {
+      "rank": 46,
+      "address": "7pGVjSNR1nLrEuwMdetHq6x21m5az3ip6cfrZGu2F27s",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 20.8655,
+      "max_single_buy_sol": 20.8655,
+      "total_trades": 1
+    },
+    {
+      "rank": 47,
+      "address": "4hMVTtJzEmQRVr47ez1YZMHRifktREZ8NJWnxYFT3Hnx",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 20.5038,
+      "max_single_buy_sol": 20.5038,
+      "total_trades": 1
+    },
+    {
+      "rank": 48,
+      "address": "4G5hDh8x3smA6M6S23RaBugRgnTZkbPemqb4srbPRBvs",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 20.3736,
+      "max_single_buy_sol": 20.3736,
+      "total_trades": 1
+    },
+    {
+      "rank": 49,
+      "address": "3d44VNXRzEA8i9V5wAQwpgTCDDEdKMejTBs3ViVHY5VC",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 20.2851,
+      "max_single_buy_sol": 20.2851,
+      "total_trades": 1
+    },
+    {
+      "rank": 50,
+      "address": "GheUg8x9VKAE3feVazgmssNXPCxJgoWoTRKcVBMF2Rr7",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 20.2851,
+      "max_single_buy_sol": 20.2851,
+      "total_trades": 1
+    },
+    {
+      "rank": 51,
+      "address": "8m317p7NkitDoC1mPo9mdNfSnXoKMvSEq2A37q8yv6rR",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 20.2851,
+      "max_single_buy_sol": 20.2851,
+      "total_trades": 1
+    },
+    {
+      "rank": 52,
+      "address": "8yuAKencKY8QK7DqPqUcKWqkBkbKCpsKukP7CLpUjLzj",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 20.2851,
+      "max_single_buy_sol": 20.2851,
+      "total_trades": 1
+    },
+    {
+      "rank": 53,
+      "address": "B1eZdHcPUMFRDzBxmxoFrw2d9QoPVRkWcLVAMviArKAZ",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 20.0425,
+      "max_single_buy_sol": 20.0425,
+      "total_trades": 1
+    },
+    {
+      "rank": 54,
+      "address": "4oEpb7DBxWMBYJtCeaVXAEneWCS1JzEKv9RpREcX4EBa",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 20.0425,
+      "max_single_buy_sol": 20.0425,
+      "total_trades": 1
+    },
+    {
+      "rank": 55,
+      "address": "8tULGhv7Ze72Sms4LzfikrVbJsoUXdoVriPkVSEoyco9",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 19.8537,
+      "max_single_buy_sol": 19.8537,
+      "total_trades": 1
+    },
+    {
+      "rank": 56,
+      "address": "4LhoCMN8QeS6ZsfUNYkwGGhGmDNoXrgF9h85puPMPGBL",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 19.8287,
+      "max_single_buy_sol": 19.8287,
+      "total_trades": 1
+    },
+    {
+      "rank": 57,
+      "address": "J3ED3AbktAJKBtCGJex5r79bPAosuXoGngx7VyjksBeg",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 19.8287,
+      "max_single_buy_sol": 19.8287,
+      "total_trades": 1
+    },
+    {
+      "rank": 58,
+      "address": "9EK1ALNCTYTfDaLAHqQRtESZnWaCg58VRqV7zter5QBD",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 19.8215,
+      "max_single_buy_sol": 19.8215,
+      "total_trades": 1
+    },
+    {
+      "rank": 59,
+      "address": "8cjABctJ2t2oLtjhCXePTayDtpyhNMoF2ZMwrS2wqBQr",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 19.8215,
+      "max_single_buy_sol": 19.8215,
+      "total_trades": 1
+    },
+    {
+      "rank": 60,
+      "address": "DnS4DxW56NybXQCy5o4DYVG7q4zLdN9LZimPfDiFQ52",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 19.8215,
+      "max_single_buy_sol": 19.8215,
+      "total_trades": 1
+    },
+    {
+      "rank": 61,
+      "address": "Egk3vQF1uVd8kFVDGDLapT7LF8TAwZzHy6dQteQa9w9M",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 19.8215,
+      "max_single_buy_sol": 19.8215,
+      "total_trades": 1
+    },
+    {
+      "rank": 62,
+      "address": "HL5bWaivfa34gozURpuwaWKEjJFBvGpojJng4oGHt5zm",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 19.5233,
+      "max_single_buy_sol": 19.5233,
+      "total_trades": 1
+    },
+    {
+      "rank": 63,
+      "address": "455GAdpfXpKXCw5VvtFKsEeKkrkzh7vFio9WysRQMJ5o",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 19.5233,
+      "max_single_buy_sol": 19.5233,
+      "total_trades": 1
+    },
+    {
+      "rank": 64,
+      "address": "WMm6Gs9BfFmHHnaDagEQTL551We9LxsJRLAto3oCuMS",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 18.6168,
+      "max_single_buy_sol": 18.6168,
+      "total_trades": 1
+    },
+    {
+      "rank": 65,
+      "address": "TmH4G7eTEV9k6R4PZehGNVUJ2jMdTPSSmdef9M68QGy",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 13.1638,
+      "max_single_buy_sol": 13.1638,
+      "total_trades": 1
+    },
+    {
+      "rank": 66,
+      "address": "GDPserevLo76QMGLAdNNxB4gHUadnu65QEwV5L1ohyNk",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 11.643,
+      "max_single_buy_sol": 7.5943,
+      "total_trades": 2
+    },
+    {
+      "rank": 67,
+      "address": "CzBfNAvEZH7bfdHa6YCJszP2wwdTvQu1D1hx2Zy9u6P3",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 12.0035,
+      "max_single_buy_sol": 12.0035,
+      "total_trades": 1
+    },
+    {
+      "rank": 68,
+      "address": "33dRiw43r1WtDz7AAqnTqPmn97gLy8uQFnc8bWnc4m3d",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 10.0019,
+      "max_single_buy_sol": 5.0017,
+      "total_trades": 2
+    },
+    {
+      "rank": 69,
+      "address": "2Y44QyELgLZyKDR4rgibvwTZATBnKxstSkwpufx3nFek",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 10.6181,
+      "max_single_buy_sol": 10.6181,
+      "total_trades": 1
+    },
+    {
+      "rank": 70,
+      "address": "68FQ21HrtuD2TuCvPn1DchVZVCw6Mde2rAQBDagStyAd",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 10.4951,
+      "max_single_buy_sol": 10.4951,
+      "total_trades": 1
+    },
+    {
+      "rank": 71,
+      "address": "J2uxjXBwynMKU2HATTCAK5QojhcxcCuW3FBuKh2bpySx",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 10.4951,
+      "max_single_buy_sol": 10.4951,
+      "total_trades": 1
+    },
+    {
+      "rank": 72,
+      "address": "82udUKe6jydqx4rQnaRFrDrAs9hhGH7QUoeB1sbH4v3t",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 10.4951,
+      "max_single_buy_sol": 10.4951,
+      "total_trades": 1
+    },
+    {
+      "rank": 73,
+      "address": "GgDmkUUJnVK8m1SN4Mim6v9dZoiRgAQnSyYmtwG18LRp",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 10.4951,
+      "max_single_buy_sol": 10.4951,
+      "total_trades": 1
+    },
+    {
+      "rank": 74,
+      "address": "GhJ4DhSKiewqgV4W34BZPDptdiV3o15xAG4cc6VmFjUz",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 10.1175,
+      "max_single_buy_sol": 10.1175,
+      "total_trades": 1
+    },
+    {
+      "rank": 75,
+      "address": "4axPNXczDq2CZdCwb4kMTm8uR7M63TWdS1FXTmeu3fx1",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.481,
+      "max_single_buy_sol": 2.6239,
+      "total_trades": 4
+    },
+    {
+      "rank": 76,
+      "address": "JAssyHK2D77SLcYax7W8gpotCrQkCtmPNw39Hqg4jKfw",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 6.4128,
+      "max_single_buy_sol": 4.2601,
+      "total_trades": 2
+    },
+    {
+      "rank": 77,
+      "address": "8uTTvwkgmsfVN4mMd7xPyuXKnfSwexpZC1dSDQ33SMc",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 6.0966,
+      "max_single_buy_sol": 5.0691,
+      "total_trades": 2
+    },
+    {
+      "rank": 78,
+      "address": "AULvvhcZcFcd6ErMZUcbaATdtYg39a8Xespu8vcknZsf",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.0474,
+      "max_single_buy_sol": 2.0609,
+      "total_trades": 4
+    },
+    {
+      "rank": 79,
+      "address": "FBQ84t8WsA4mdQ2tMGf6zBG5VkySEX5MRvSKJyPuPmx5",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 1.431,
+      "max_single_buy_sol": 1.0063,
+      "total_trades": 5
+    },
+    {
+      "rank": 80,
+      "address": "9rmpNCCxe817Yqq2f3ErqczNZ5qRmnoZbJcQZsD8fiBY",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 7.2566,
+      "max_single_buy_sol": 7.2566,
+      "total_trades": 1
+    },
+    {
+      "rank": 81,
+      "address": "bH5U1zJpeeSjz6JzJdtdLpLcUJHfV1G7PUXcUPrW3Tw",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.1025,
+      "max_single_buy_sol": 1.7001,
+      "total_trades": 3
+    },
+    {
+      "rank": 82,
+      "address": "E7ykLVMMYSxssBRi44oCq1fNxWySEfyJi7gGnMGRw2CY",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 5.5014,
+      "max_single_buy_sol": 5.5014,
+      "total_trades": 1
+    },
+    {
+      "rank": 83,
+      "address": "4o4Cz2DLhnQY9M33BFUZZwiucTNA6E4Pv9A3K85k6g9e",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.9476,
+      "max_single_buy_sol": 2.022,
+      "total_trades": 2
+    },
+    {
+      "rank": 84,
+      "address": "F5EhA1gJVTNhS43bbxQjLb8uGM5WW5kBRzNuRmF2T1db",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 5.3614,
+      "max_single_buy_sol": 5.3614,
+      "total_trades": 1
+    },
+    {
+      "rank": 85,
+      "address": "4xd3Y2qvX43wwfLupdQVsE5ZTpnhXmpn8Dmf4Hufkj9n",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.6363,
+      "max_single_buy_sol": 3.1578,
+      "total_trades": 2
+    },
+    {
+      "rank": 86,
+      "address": "3WRdSMEgaB8kHdhaRkA3HBQThCxsUgbrZN239mKJrVDh",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 5.0027,
+      "max_single_buy_sol": 5.0027,
+      "total_trades": 1
+    },
+    {
+      "rank": 87,
+      "address": "BQjrN5SJVoSj3xHTqwkMFp9J6bf7ixKTkqBE6wvxB1tg",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.4067,
+      "max_single_buy_sol": 2.8653,
+      "total_trades": 2
+    },
+    {
+      "rank": 88,
+      "address": "FpPg7fKai7c1qWi1jpMkAwWa35gx6fJ2PxcyH2QZPqjH",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 0.4,
+      "max_single_buy_sol": 0.1,
+      "total_trades": 4
+    },
+    {
+      "rank": 89,
+      "address": "EfpEm2rrQNkSs7Akqw83pYgjheyrtcyWZKcsqvqWX8Am",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 4.8911,
+      "max_single_buy_sol": 4.8911,
+      "total_trades": 1
+    },
+    {
+      "rank": 90,
+      "address": "7Gthq3qpCyMYdvLmdYSZhKUCnuq2X9ubN9Ra1n6ivwsv",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 4.661,
+      "max_single_buy_sol": 4.661,
+      "total_trades": 1
+    },
+    {
+      "rank": 91,
+      "address": "2eoxLVCtRsW3YjPXKftUVTXaurk33fMSW42fgn5es1p2",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 4.1222,
+      "max_single_buy_sol": 4.1222,
+      "total_trades": 1
+    },
+    {
+      "rank": 92,
+      "address": "9M3BZ7UGqWe6XSu18aeFYk64DNbVYYQ3gkaLztXwBgAG",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 4.0837,
+      "max_single_buy_sol": 4.0837,
+      "total_trades": 1
+    },
+    {
+      "rank": 93,
+      "address": "ADxqNxNwYDyV7KcdmTPYyTpecadXRCPpN3p8VU55cpqB",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 4.0048,
+      "max_single_buy_sol": 4.0048,
+      "total_trades": 1
+    },
+    {
+      "rank": 94,
+      "address": "AKrcLcfG859eWcRAodxHnX1ZLkWhfE7EtbQU1wjjprja",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.9809,
+      "max_single_buy_sol": 3.9809,
+      "total_trades": 1
+    },
+    {
+      "rank": 95,
+      "address": "6oBTTYwa3r3KUiSLuwxkU9c85A9cXCDwWF5YnnEqgL54",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 2.1267,
+      "max_single_buy_sol": 1.0874,
+      "total_trades": 2
+    },
+    {
+      "rank": 96,
+      "address": "4ECvHKKYKjy6rzadcoVihdftX1Z6wMp3iWeAdmvUz7Kh",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.5914,
+      "max_single_buy_sol": 3.5914,
+      "total_trades": 1
+    },
+    {
+      "rank": 97,
+      "address": "GA4L9UrCiaSux9xaTktUbcQRuwUj2gCF7KiomPh9jC3n",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.5795,
+      "max_single_buy_sol": 3.5795,
+      "total_trades": 1
+    },
+    {
+      "rank": 98,
+      "address": "GNNHFJ8vVXQEXdEawn8QBFzkkvymBRwW1rvCdJXsHaZy",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.5795,
+      "max_single_buy_sol": 3.5795,
+      "total_trades": 1
+    },
+    {
+      "rank": 99,
+      "address": "g6xJ3mgk4ggmgvFacQKVo6L6zAtoNzm5devmXSBZxEi",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.5495,
+      "max_single_buy_sol": 3.5495,
+      "total_trades": 1
+    },
+    {
+      "rank": 100,
+      "address": "hhGVr9yVsDDZ5WeU58eid3fuheXztwVoQZWhWUWsmPX",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.5495,
+      "max_single_buy_sol": 3.5495,
+      "total_trades": 1
+    }
+  ]
+}

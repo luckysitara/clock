@@ -1,0 +1,708 @@
+{
+  "generated_at_utc": "2026-09-29T13:30:00Z",
+  "total_ranked": 218,
+  "top_100": [
+    "F7LqQscxh7NK8S3AJaEZ7vryxvQbqKksQAZKtVgJYwmE",
+    "22AGVAPfKbxKBh9JgGyG8WJHo6tVbKDaoWacaCfcbPE9",
+    "36kR92Y2hqv9X3zdCXLvTPm5snuHbWdv19D1QbXFNUXX",
+    "EedZ8L7ptGadz696pDZNFMiBhNpLMkk8iJTcMSwecypH",
+    "9v5MtQcfHQSmqDQSMstdcULDc1tKLqaTewFyHH6iXbDo",
+    "7b8nXnvByXYjMK5NiHcUQHh8b9EPkixEwYknLGhmkV8g",
+    "Ab69vN5tdJqGJ65KgXXpNVibSzNTCZqU7Rm6oEzyqpKT",
+    "3MCw6ZmiRVUqfdpgWyoz1NFCbfkcEDFZTJCb1vjTaeyk",
+    "DvUeV911YjDTGayWcduZSgudiZtYvpF4bc1W2bbKPoGP",
+    "HD7CyuExUDuCFBTvooJwWBfdWtv8fTsTHSoDVCDFHYzF",
+    "4SmwYH1qfSR3chSz7J3if7zQupNb7hLLGsubbLwuRs3e",
+    "HSUAeUMMfZVagyFsScJjP8EFWujeTCfpuAXqxxK6Qyu4",
+    "2FtM5DHXzUajNesMu9UuNg83hycXbiSeqcoYktfBhDEG",
+    "GJrwJ5zufVAEMd9w9zVxPQ3JU88orUiSoYTHtYzMWaHh",
+    "EgLFgoCMEdEQJKfwAQ2sUGr1yvQzxYL3ErNQPDM7d74b",
+    "3rfPE3ij77hJJum8YTW3KhtfXdrZEBz4NkHDCVvjYWVd",
+    "uSVPR9R7Doh3dFySy497jgdGE1WAuqsTKyyKxjrXhVA",
+    "5umYbJuPs26YDx1Vw2VAWfL44K2wMJUdjrjrnBokbzpv",
+    "C42q3HrHqzkAahXgV7HD7CwWDdpXbeHdmP7yKX8WFvfX",
+    "HqdXETp5PJ7yR8YysTHSr1C7xBDmbEgFYuizhR4GhYmo",
+    "3cYX2wW1XPp7F9Bsf68FtMq1XfwqAPFiCJsFByiCGYtc",
+    "3LKZTQ761MLbmf5jFcLsRBDd1BqjDknDFqZmvPFxzWAu",
+    "BgYSSgzFQz2f22YFj4sxyXqw4zj2n5yUmQKWjyNZYYXQ",
+    "DmHnyX5ewwJwqbVJkDEwgnn6MjwKWjQ77R7x95e9thGj",
+    "8NUH6De6e3rjHgHA3DRmwVwyos3ZC4DoUnPruSbzsTb7",
+    "F62MCsbE7isGvGVXNfmkYtv1E6g1DtGtoeKxzLcsmarf",
+    "J2c6hWmzCzxFHVds2rmDufnZGTTYRFVYW6i9AoC3CDWh",
+    "9XEtqMRr5wdJnqti4DaLXLRhjgtEfGkMVYLhTvv4P3Fo",
+    "CQZ7pFrBVMnSfZNxRSEBi7K4W5hanwdCX6zUme8gsnaZ",
+    "8F9HnfAUf9mDsYCMfPVsv7A4fQUydoG9CX4y7n2m4iX9",
+    "BER8kfXkGpYv2xNvGnTqEHCWrkaGX3prB9Kvd2Zq5iby",
+    "22yyBjGLxnzWetDTTLG2oZeENb9CHSgve4pDGZfPYc5q",
+    "86zVmpcMsCj5MhsWdZ48kJ1y3DT76JS6HbX3UL7VQoYg",
+    "ACT31B32kHaDgxBWNY7Qt3SvgN7jaYTjmYDQu5REN9Ew",
+    "htvMzELnFB962xuE26Wko55SER9geUawSMRqtvAjSXw",
+    "FNo2gedSJ4CuYLP1zWZ9YdjkSKe62eJGh8vsGhYCE6iQ",
+    "GCAhDAcQ6zyYY1okJqzpL4Bq3m1oDqTtQLaFwUHuoQUV",
+    "GUEJxVLFa8hYBPhrJGvg4s2wEkHNeoa4bsR5wwarrijZ",
+    "FSn3sBzY3YbUM2SDuqFnMFYoZwqaffnCfNDsiV7XJFQ5",
+    "GV9yMYv9sVkypHy3UwwtzdFpKA3sKPAV49ms6PrdERHi",
+    "94WTsdP5Hy9o76hts5apFuvWTaNttUogajB5WSqiC1uP",
+    "9HGpEWZDja3GhB652ySjUwUyDpFX6oiZTEQNxpjoQw8P",
+    "3BgR7FDmZM9f3wVHqrNZ4SspYkxVuEowMVY7hDbXjHfv",
+    "AveoQfoU36guB1zG1e5f1GdCjcuhrQ7yR7PcNY87aJgT",
+    "GePaAUXD4XyCSZnzUjLwFrcWM1rJHtT7powVZPJ6Xjft",
+    "FEUa5TK22AyRyyjKpd2bCx7se1Eczmt7AFxdS6dUfHz4",
+    "6A59APPsPXCBbMZJsAKfMSf1tiXnYFxWM4Ho3b78dAeP",
+    "1UTzmbt1c3NuQB6i7ZRf5PKxqyTFo1mpgb1P6xQ5JgU",
+    "BeiwKfM82CannyPLAcqgKZ7xXFwyXGnWVTAa6En2UXuJ",
+    "J1owsFZnwNeuQRf3pRADoD83wgvFihS5jbRupgSTqGFn",
+    "HA8WhZJGKTi8Mw2osEuWhk56yoonKg4bv4uq9VuN23UU",
+    "jjr4mHC41Qcp7h7RZH8HJw8foPAAjooNgAKRXNpvfFf",
+    "7eWkMyY6WSEJRLVMiBmk4TqVK8ZZQ4Ekggc64CJK8riW",
+    "7GDtvN4bbae5hSCCE74AyqzTGzfKXURiTsmAXcFBXcEM",
+    "Cz9758hb1SwVY7eQyxK6Lb6xnFbeU5UmkrkzqbRQx9es",
+    "9GdYLZoGMeaoy54E6cq3L2nSs67AfAHtqEihmC7ppBvK",
+    "36xf9CLGarCrP57ebCLU4ivx3zHuJY5vcFauN8PYh4q5",
+    "4hMVTtJzEmQRVr47ez1YZMHRifktREZ8NJWnxYFT3Hnx",
+    "GheUg8x9VKAE3feVazgmssNXPCxJgoWoTRKcVBMF2Rr7",
+    "8m317p7NkitDoC1mPo9mdNfSnXoKMvSEq2A37q8yv6rR",
+    "B1eZdHcPUMFRDzBxmxoFrw2d9QoPVRkWcLVAMviArKAZ",
+    "DnS4DxW56NybXQCy5o4DYVG7q4zLdN9LZimPfDiFQ52",
+    "HL5bWaivfa34gozURpuwaWKEjJFBvGpojJng4oGHt5zm",
+    "39FSoeiXBxbiajTQ3RpdD51Pvc9ZGfY65XHiV6oiDWKd",
+    "56S29mZ3wqvw8hATuUUFqKhGcSGYFASRRFNT38W8q7G3",
+    "G9sQPg9Eimkwe72w1xH1tPUc9RFNuK6Ufw5AyWy6j7ob",
+    "CASHUTaewCTUqa6j2SzD6vgBMvMLsNjdpuBYGTxWDBmi",
+    "7FPqg7MpJwvGneBPvkBrCDjAvZhFnAvoiUw9LF91nsN",
+    "J2uxjXBwynMKU2HATTCAK5QojhcxcCuW3FBuKh2bpySx",
+    "82udUKe6jydqx4rQnaRFrDrAs9hhGH7QUoeB1sbH4v3t",
+    "FajP2FjmdGDxPwbhVStVVEkMQ2sC2nEayypBztviPfNM",
+    "99ACHHzaXeiczRByWDsNHz4sFqjE1XSHFmJNe9PSLfcb",
+    "GDPserevLo76QMGLAdNNxB4gHUadnu65QEwV5L1ohyNk",
+    "9rmpNCCxe817Yqq2f3ErqczNZ5qRmnoZbJcQZsD8fiBY",
+    "2aVCVbbUSt4ZAcBDo5vb7jwLupTmSGL3BsLH7K3G3Vfk",
+    "8uTTvwkgmsfVN4mMd7xPyuXKnfSwexpZC1dSDQ33SMc",
+    "E7ykLVMMYSxssBRi44oCq1fNxWySEfyJi7gGnMGRw2CY",
+    "2eoxLVCtRsW3YjPXKftUVTXaurk33fMSW42fgn5es1p2",
+    "9M3BZ7UGqWe6XSu18aeFYk64DNbVYYQ3gkaLztXwBgAG",
+    "AKrcLcfG859eWcRAodxHnX1ZLkWhfE7EtbQU1wjjprja",
+    "4ECvHKKYKjy6rzadcoVihdftX1Z6wMp3iWeAdmvUz7Kh",
+    "GA4L9UrCiaSux9xaTktUbcQRuwUj2gCF7KiomPh9jC3n",
+    "g6xJ3mgk4ggmgvFacQKVo6L6zAtoNzm5devmXSBZxEi",
+    "5t4TpwYqhskTa9WVUBZEHsJyXdgeCa9GqDw7gvLfJFHH",
+    "6f9KuZVZiRcN522tnF8H543PZwEuMPL9BhRD6xM2UPUo",
+    "9DN7uBKryxsETjG3z4cpTvUMUUfnr9452enis48xEvxD",
+    "FZ34JnBdvVQddR5CceHsXbWNPnvqUxg1ntCnRgoR7yDP",
+    "C5Ez9Gectminh7Ph1x7YLCQ37LBX8G9v3k8aZsbeNASc",
+    "fVK11HP3GQmCKXCMNXYbMWMWFfdZbaKVGmSmnhYQgHU",
+    "DHwYpxmjvrqD1eQsdDU7FDAYs57yoVgQhXGMWvvyErBq",
+    "bH5U1zJpeeSjz6JzJdtdLpLcUJHfV1G7PUXcUPrW3Tw",
+    "8H9U4iMoX8424HXdebnXaRAC9JwoZZ7NrN5MXdAauGxM",
+    "9vu429xExVnFes1K3P22YA1YyYA52mst6fFQa8KZJHXY",
+    "JAssyHK2D77SLcYax7W8gpotCrQkCtmPNw39Hqg4jKfw",
+    "6oBTTYwa3r3KUiSLuwxkU9c85A9cXCDwWF5YnnEqgL54",
+    "Cgj1fCntUQKHiehSJN62poCmb9nkm4jQSh1pYGnFUCXz",
+    "EkXg7kJ9ygeZcXfB5omQ8w45FmFVADAgz8V39fKWTPyc",
+    "J1kTBxDu8VPTs6perdaz3cARtW89t8dgJgB8Kt2dZtT",
+    "5y4cufHXt2U8FygeAjDcxFaepGHDGPs7MwtKwhtwyFZ5",
+    "AUh2n8zbqxPSDgvxZWwcGX1esGBc4dsXtW9UUVgX4E9H"
+  ],
+  "details": [
+    {
+      "rank": 1,
+      "address": "F7LqQscxh7NK8S3AJaEZ7vryxvQbqKksQAZKtVgJYwmE",
+      "graduated_tokens_won": 9,
+      "total_sol_deployed": 9.4486
+    },
+    {
+      "rank": 2,
+      "address": "22AGVAPfKbxKBh9JgGyG8WJHo6tVbKDaoWacaCfcbPE9",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0811
+    },
+    {
+      "rank": 3,
+      "address": "36kR92Y2hqv9X3zdCXLvTPm5snuHbWdv19D1QbXFNUXX",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.078
+    },
+    {
+      "rank": 4,
+      "address": "EedZ8L7ptGadz696pDZNFMiBhNpLMkk8iJTcMSwecypH",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0772
+    },
+    {
+      "rank": 5,
+      "address": "9v5MtQcfHQSmqDQSMstdcULDc1tKLqaTewFyHH6iXbDo",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0771
+    },
+    {
+      "rank": 6,
+      "address": "7b8nXnvByXYjMK5NiHcUQHh8b9EPkixEwYknLGhmkV8g",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0771
+    },
+    {
+      "rank": 7,
+      "address": "Ab69vN5tdJqGJ65KgXXpNVibSzNTCZqU7Rm6oEzyqpKT",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0771
+    },
+    {
+      "rank": 8,
+      "address": "3MCw6ZmiRVUqfdpgWyoz1NFCbfkcEDFZTJCb1vjTaeyk",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0771
+    },
+    {
+      "rank": 9,
+      "address": "DvUeV911YjDTGayWcduZSgudiZtYvpF4bc1W2bbKPoGP",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 10,
+      "address": "HD7CyuExUDuCFBTvooJwWBfdWtv8fTsTHSoDVCDFHYzF",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 11,
+      "address": "4SmwYH1qfSR3chSz7J3if7zQupNb7hLLGsubbLwuRs3e",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 12,
+      "address": "HSUAeUMMfZVagyFsScJjP8EFWujeTCfpuAXqxxK6Qyu4",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 13,
+      "address": "2FtM5DHXzUajNesMu9UuNg83hycXbiSeqcoYktfBhDEG",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 14,
+      "address": "GJrwJ5zufVAEMd9w9zVxPQ3JU88orUiSoYTHtYzMWaHh",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 15,
+      "address": "EgLFgoCMEdEQJKfwAQ2sUGr1yvQzxYL3ErNQPDM7d74b",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 16,
+      "address": "3rfPE3ij77hJJum8YTW3KhtfXdrZEBz4NkHDCVvjYWVd",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 17,
+      "address": "uSVPR9R7Doh3dFySy497jgdGE1WAuqsTKyyKxjrXhVA",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 18,
+      "address": "5umYbJuPs26YDx1Vw2VAWfL44K2wMJUdjrjrnBokbzpv",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 19,
+      "address": "C42q3HrHqzkAahXgV7HD7CwWDdpXbeHdmP7yKX8WFvfX",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 20,
+      "address": "HqdXETp5PJ7yR8YysTHSr1C7xBDmbEgFYuizhR4GhYmo",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 21,
+      "address": "3cYX2wW1XPp7F9Bsf68FtMq1XfwqAPFiCJsFByiCGYtc",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 22,
+      "address": "3LKZTQ761MLbmf5jFcLsRBDd1BqjDknDFqZmvPFxzWAu",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 23,
+      "address": "BgYSSgzFQz2f22YFj4sxyXqw4zj2n5yUmQKWjyNZYYXQ",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 24,
+      "address": "DmHnyX5ewwJwqbVJkDEwgnn6MjwKWjQ77R7x95e9thGj",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 25,
+      "address": "8NUH6De6e3rjHgHA3DRmwVwyos3ZC4DoUnPruSbzsTb7",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 26,
+      "address": "F62MCsbE7isGvGVXNfmkYtv1E6g1DtGtoeKxzLcsmarf",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 27,
+      "address": "J2c6hWmzCzxFHVds2rmDufnZGTTYRFVYW6i9AoC3CDWh",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 28,
+      "address": "9XEtqMRr5wdJnqti4DaLXLRhjgtEfGkMVYLhTvv4P3Fo",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 29,
+      "address": "CQZ7pFrBVMnSfZNxRSEBi7K4W5hanwdCX6zUme8gsnaZ",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.077
+    },
+    {
+      "rank": 30,
+      "address": "8F9HnfAUf9mDsYCMfPVsv7A4fQUydoG9CX4y7n2m4iX9",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0769
+    },
+    {
+      "rank": 31,
+      "address": "BER8kfXkGpYv2xNvGnTqEHCWrkaGX3prB9Kvd2Zq5iby",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0769
+    },
+    {
+      "rank": 32,
+      "address": "22yyBjGLxnzWetDTTLG2oZeENb9CHSgve4pDGZfPYc5q",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0769
+    },
+    {
+      "rank": 33,
+      "address": "86zVmpcMsCj5MhsWdZ48kJ1y3DT76JS6HbX3UL7VQoYg",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0769
+    },
+    {
+      "rank": 34,
+      "address": "ACT31B32kHaDgxBWNY7Qt3SvgN7jaYTjmYDQu5REN9Ew",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0769
+    },
+    {
+      "rank": 35,
+      "address": "htvMzELnFB962xuE26Wko55SER9geUawSMRqtvAjSXw",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0769
+    },
+    {
+      "rank": 36,
+      "address": "FNo2gedSJ4CuYLP1zWZ9YdjkSKe62eJGh8vsGhYCE6iQ",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0769
+    },
+    {
+      "rank": 37,
+      "address": "GCAhDAcQ6zyYY1okJqzpL4Bq3m1oDqTtQLaFwUHuoQUV",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0769
+    },
+    {
+      "rank": 38,
+      "address": "GUEJxVLFa8hYBPhrJGvg4s2wEkHNeoa4bsR5wwarrijZ",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0769
+    },
+    {
+      "rank": 39,
+      "address": "FSn3sBzY3YbUM2SDuqFnMFYoZwqaffnCfNDsiV7XJFQ5",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0769
+    },
+    {
+      "rank": 40,
+      "address": "GV9yMYv9sVkypHy3UwwtzdFpKA3sKPAV49ms6PrdERHi",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0769
+    },
+    {
+      "rank": 41,
+      "address": "94WTsdP5Hy9o76hts5apFuvWTaNttUogajB5WSqiC1uP",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0768
+    },
+    {
+      "rank": 42,
+      "address": "9HGpEWZDja3GhB652ySjUwUyDpFX6oiZTEQNxpjoQw8P",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0759
+    },
+    {
+      "rank": 43,
+      "address": "3BgR7FDmZM9f3wVHqrNZ4SspYkxVuEowMVY7hDbXjHfv",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 86.0749
+    },
+    {
+      "rank": 44,
+      "address": "AveoQfoU36guB1zG1e5f1GdCjcuhrQ7yR7PcNY87aJgT",
+      "graduated_tokens_won": 3,
+      "total_sol_deployed": 65.0162
+    },
+    {
+      "rank": 45,
+      "address": "GePaAUXD4XyCSZnzUjLwFrcWM1rJHtT7powVZPJ6Xjft",
+      "graduated_tokens_won": 6,
+      "total_sol_deployed": 2.372
+    },
+    {
+      "rank": 46,
+      "address": "FEUa5TK22AyRyyjKpd2bCx7se1Eczmt7AFxdS6dUfHz4",
+      "graduated_tokens_won": 5,
+      "total_sol_deployed": 5.0571
+    },
+    {
+      "rank": 47,
+      "address": "6A59APPsPXCBbMZJsAKfMSf1tiXnYFxWM4Ho3b78dAeP",
+      "graduated_tokens_won": 4,
+      "total_sol_deployed": 6.2021
+    },
+    {
+      "rank": 48,
+      "address": "1UTzmbt1c3NuQB6i7ZRf5PKxqyTFo1mpgb1P6xQ5JgU",
+      "graduated_tokens_won": 4,
+      "total_sol_deployed": 3.6868
+    },
+    {
+      "rank": 49,
+      "address": "BeiwKfM82CannyPLAcqgKZ7xXFwyXGnWVTAa6En2UXuJ",
+      "graduated_tokens_won": 3,
+      "total_sol_deployed": 13.0903
+    },
+    {
+      "rank": 50,
+      "address": "J1owsFZnwNeuQRf3pRADoD83wgvFihS5jbRupgSTqGFn",
+      "graduated_tokens_won": 3,
+      "total_sol_deployed": 10.7278
+    },
+    {
+      "rank": 51,
+      "address": "HA8WhZJGKTi8Mw2osEuWhk56yoonKg4bv4uq9VuN23UU",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 21.6716
+    },
+    {
+      "rank": 52,
+      "address": "jjr4mHC41Qcp7h7RZH8HJw8foPAAjooNgAKRXNpvfFf",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 21.4068
+    },
+    {
+      "rank": 53,
+      "address": "7eWkMyY6WSEJRLVMiBmk4TqVK8ZZQ4Ekggc64CJK8riW",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 21.4068
+    },
+    {
+      "rank": 54,
+      "address": "7GDtvN4bbae5hSCCE74AyqzTGzfKXURiTsmAXcFBXcEM",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 21.3668
+    },
+    {
+      "rank": 55,
+      "address": "Cz9758hb1SwVY7eQyxK6Lb6xnFbeU5UmkrkzqbRQx9es",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 21.3668
+    },
+    {
+      "rank": 56,
+      "address": "9GdYLZoGMeaoy54E6cq3L2nSs67AfAHtqEihmC7ppBvK",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 21.1518
+    },
+    {
+      "rank": 57,
+      "address": "36xf9CLGarCrP57ebCLU4ivx3zHuJY5vcFauN8PYh4q5",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 20.8655
+    },
+    {
+      "rank": 58,
+      "address": "4hMVTtJzEmQRVr47ez1YZMHRifktREZ8NJWnxYFT3Hnx",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 20.5038
+    },
+    {
+      "rank": 59,
+      "address": "GheUg8x9VKAE3feVazgmssNXPCxJgoWoTRKcVBMF2Rr7",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 20.2851
+    },
+    {
+      "rank": 60,
+      "address": "8m317p7NkitDoC1mPo9mdNfSnXoKMvSEq2A37q8yv6rR",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 20.2851
+    },
+    {
+      "rank": 61,
+      "address": "B1eZdHcPUMFRDzBxmxoFrw2d9QoPVRkWcLVAMviArKAZ",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 20.0425
+    },
+    {
+      "rank": 62,
+      "address": "DnS4DxW56NybXQCy5o4DYVG7q4zLdN9LZimPfDiFQ52",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 19.8215
+    },
+    {
+      "rank": 63,
+      "address": "HL5bWaivfa34gozURpuwaWKEjJFBvGpojJng4oGHt5zm",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 19.5233
+    },
+    {
+      "rank": 64,
+      "address": "39FSoeiXBxbiajTQ3RpdD51Pvc9ZGfY65XHiV6oiDWKd",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 3.6861
+    },
+    {
+      "rank": 65,
+      "address": "56S29mZ3wqvw8hATuUUFqKhGcSGYFASRRFNT38W8q7G3",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 1.769
+    },
+    {
+      "rank": 66,
+      "address": "G9sQPg9Eimkwe72w1xH1tPUc9RFNuK6Ufw5AyWy6j7ob",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 1.2189
+    },
+    {
+      "rank": 67,
+      "address": "CASHUTaewCTUqa6j2SzD6vgBMvMLsNjdpuBYGTxWDBmi",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 0.5986
+    },
+    {
+      "rank": 68,
+      "address": "7FPqg7MpJwvGneBPvkBrCDjAvZhFnAvoiUw9LF91nsN",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 0.5455
+    },
+    {
+      "rank": 69,
+      "address": "J2uxjXBwynMKU2HATTCAK5QojhcxcCuW3FBuKh2bpySx",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 10.4951
+    },
+    {
+      "rank": 70,
+      "address": "82udUKe6jydqx4rQnaRFrDrAs9hhGH7QUoeB1sbH4v3t",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 10.4951
+    },
+    {
+      "rank": 71,
+      "address": "FajP2FjmdGDxPwbhVStVVEkMQ2sC2nEayypBztviPfNM",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 0.2043
+    },
+    {
+      "rank": 72,
+      "address": "99ACHHzaXeiczRByWDsNHz4sFqjE1XSHFmJNe9PSLfcb",
+      "graduated_tokens_won": 2,
+      "total_sol_deployed": 0.1461
+    },
+    {
+      "rank": 73,
+      "address": "GDPserevLo76QMGLAdNNxB4gHUadnu65QEwV5L1ohyNk",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 7.5943
+    },
+    {
+      "rank": 74,
+      "address": "9rmpNCCxe817Yqq2f3ErqczNZ5qRmnoZbJcQZsD8fiBY",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 7.2566
+    },
+    {
+      "rank": 75,
+      "address": "2aVCVbbUSt4ZAcBDo5vb7jwLupTmSGL3BsLH7K3G3Vfk",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 6.4222
+    },
+    {
+      "rank": 76,
+      "address": "8uTTvwkgmsfVN4mMd7xPyuXKnfSwexpZC1dSDQ33SMc",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 6.0966
+    },
+    {
+      "rank": 77,
+      "address": "E7ykLVMMYSxssBRi44oCq1fNxWySEfyJi7gGnMGRw2CY",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 5.5014
+    },
+    {
+      "rank": 78,
+      "address": "2eoxLVCtRsW3YjPXKftUVTXaurk33fMSW42fgn5es1p2",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 4.1222
+    },
+    {
+      "rank": 79,
+      "address": "9M3BZ7UGqWe6XSu18aeFYk64DNbVYYQ3gkaLztXwBgAG",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 4.0837
+    },
+    {
+      "rank": 80,
+      "address": "AKrcLcfG859eWcRAodxHnX1ZLkWhfE7EtbQU1wjjprja",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.9809
+    },
+    {
+      "rank": 81,
+      "address": "4ECvHKKYKjy6rzadcoVihdftX1Z6wMp3iWeAdmvUz7Kh",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.5914
+    },
+    {
+      "rank": 82,
+      "address": "GA4L9UrCiaSux9xaTktUbcQRuwUj2gCF7KiomPh9jC3n",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.5795
+    },
+    {
+      "rank": 83,
+      "address": "g6xJ3mgk4ggmgvFacQKVo6L6zAtoNzm5devmXSBZxEi",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.5495
+    },
+    {
+      "rank": 84,
+      "address": "5t4TpwYqhskTa9WVUBZEHsJyXdgeCa9GqDw7gvLfJFHH",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.3784
+    },
+    {
+      "rank": 85,
+      "address": "6f9KuZVZiRcN522tnF8H543PZwEuMPL9BhRD6xM2UPUo",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.3289
+    },
+    {
+      "rank": 86,
+      "address": "9DN7uBKryxsETjG3z4cpTvUMUUfnr9452enis48xEvxD",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.1315
+    },
+    {
+      "rank": 87,
+      "address": "FZ34JnBdvVQddR5CceHsXbWNPnvqUxg1ntCnRgoR7yDP",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.1222
+    },
+    {
+      "rank": 88,
+      "address": "C5Ez9Gectminh7Ph1x7YLCQ37LBX8G9v3k8aZsbeNASc",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 3.0001
+    },
+    {
+      "rank": 89,
+      "address": "fVK11HP3GQmCKXCMNXYbMWMWFfdZbaKVGmSmnhYQgHU",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 2.8037
+    },
+    {
+      "rank": 90,
+      "address": "DHwYpxmjvrqD1eQsdDU7FDAYs57yoVgQhXGMWvvyErBq",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 2.49
+    },
+    {
+      "rank": 91,
+      "address": "bH5U1zJpeeSjz6JzJdtdLpLcUJHfV1G7PUXcUPrW3Tw",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 2.3257
+    },
+    {
+      "rank": 92,
+      "address": "8H9U4iMoX8424HXdebnXaRAC9JwoZZ7NrN5MXdAauGxM",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 2.2487
+    },
+    {
+      "rank": 93,
+      "address": "9vu429xExVnFes1K3P22YA1YyYA52mst6fFQa8KZJHXY",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 2.24
+    },
+    {
+      "rank": 94,
+      "address": "JAssyHK2D77SLcYax7W8gpotCrQkCtmPNw39Hqg4jKfw",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 2.1527
+    },
+    {
+      "rank": 95,
+      "address": "6oBTTYwa3r3KUiSLuwxkU9c85A9cXCDwWF5YnnEqgL54",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 2.1267
+    },
+    {
+      "rank": 96,
+      "address": "Cgj1fCntUQKHiehSJN62poCmb9nkm4jQSh1pYGnFUCXz",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 2.0158
+    },
+    {
+      "rank": 97,
+      "address": "EkXg7kJ9ygeZcXfB5omQ8w45FmFVADAgz8V39fKWTPyc",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 2.0051
+    },
+    {
+      "rank": 98,
+      "address": "J1kTBxDu8VPTs6perdaz3cARtW89t8dgJgB8Kt2dZtT",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 1.9414
+    },
+    {
+      "rank": 99,
+      "address": "5y4cufHXt2U8FygeAjDcxFaepGHDGPs7MwtKwhtwyFZ5",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 1.926
+    },
+    {
+      "rank": 100,
+      "address": "AUh2n8zbqxPSDgvxZWwcGX1esGBc4dsXtW9UUVgX4E9H",
+      "graduated_tokens_won": 1,
+      "total_sol_deployed": 1.9143
+    }
+  ]
+}

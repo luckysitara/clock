@@ -241,8 +241,15 @@ impl YellowstoneStreamer {
                     // Check if one of our Top 20 whale wallets is involved
                     let matched_whale = whale_filter.matches_any(&account_keys);
 
+                    let pumpfun_bytes = crate::constants::pumpfun_program_id().to_bytes();
+
                     // Scan instructions
                     for ix in &msg_data.instructions {
+                        let prog_idx = ix.program_id_index as usize;
+                        if prog_idx >= account_keys.len() || account_keys[prog_idx] != pumpfun_bytes {
+                            continue;
+                        }
+
                         let data = &ix.data;
 
                         // 1. BUY INSTRUCTION
@@ -439,8 +446,10 @@ impl YellowstoneStreamer {
                                                 // Inspect if creator bought initial tokens in the same transaction
                                                 let mut dev_bought_sol = 0.0;
                                                 for other_ix in &msg_data.instructions {
-                                                    if fast_is_discriminator(&other_ix.data, BUY_DISCRIMINATOR_U64) {
-                                                        if let Some(buy_pod) = PumpFunBuyPod::read_from_raw(&other_ix.data) {
+                                                    let other_prog_idx = other_ix.program_id_index as usize;
+                                                    if other_prog_idx < account_keys.len() && account_keys[other_prog_idx] == pumpfun_bytes {
+                                                        if fast_is_discriminator(&other_ix.data, BUY_DISCRIMINATOR_U64) {
+                                                            if let Some(buy_pod) = PumpFunBuyPod::read_from_raw(&other_ix.data) {
                                                             if other_ix.accounts.len() > 2 {
                                                                 let m_idx = other_ix.accounts[2] as usize;
                                                                 if m_idx < account_keys.len() && account_keys[m_idx] == mint.to_bytes() {
@@ -456,6 +465,7 @@ impl YellowstoneStreamer {
                                                         }
                                                     }
                                                 }
+                                            }
 
                                                 {
                                                     let mut cache = self.curve_cache.write().await;

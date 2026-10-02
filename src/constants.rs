@@ -124,6 +124,11 @@ pub fn pump_fee_program_id() -> Pubkey {
 }
 
 #[inline(always)]
+pub fn pumpfun_program_id() -> Pubkey {
+    Pubkey::from_str(PUMPFUN_PROGRAM).unwrap()
+}
+
+#[inline(always)]
 pub fn spl_token_program_id() -> Pubkey {
     Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap()
 }

@@ -148,7 +148,7 @@ impl ExecutionEngine {
                     .context("Curve calculation failed or curve is complete")?;
 
                 let token_prog = token_program.unwrap_or_else(|| {
-                    crate::constants::spl_token_2022_program_id()
+                    crate::constants::spl_token_program_id()
                 });
 
                 info!(
@@ -249,7 +249,7 @@ impl ExecutionEngine {
                     .context("Curve sell calculation failed")?;
 
                 let token_prog = token_program.unwrap_or_else(|| {
-                    crate::constants::spl_token_2022_program_id()
+                    crate::constants::spl_token_program_id()
                 });
 
                 // In panic dump or stop-loss, use 1 lamport floor so Pump.fun AMM NEVER fails with Custom 6003 (TooLittleSolReceived)

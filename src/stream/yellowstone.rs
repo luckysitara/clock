@@ -316,12 +316,23 @@ impl YellowstoneStreamer {
                                                             let token_prog = if ix.accounts.len() > 8 {
                                                                 let token_program_idx = ix.accounts[8] as usize;
                                                                 if token_program_idx < account_keys.len() {
-                                                                    Some(Pubkey::new_from_array(account_keys[token_program_idx]))
-                                                                } else {
+                                                                    let prog = Pubkey::new_from_array(account_keys[token_program_idx]);
+                                                                    if prog == crate::constants::spl_token_2022_program_id() || prog == crate::constants::spl_token_program_id() {
+                                                                        Some(prog)
+                                                                    } else if account_keys.iter().any(|k| *k == crate::constants::spl_token_2022_program_id().to_bytes()) {
+                                                                        Some(crate::constants::spl_token_2022_program_id())
+                                                                    } else {
+                                                                        Some(crate::constants::spl_token_program_id())
+                                                                    }
+                                                                } else if account_keys.iter().any(|k| *k == crate::constants::spl_token_2022_program_id().to_bytes()) {
                                                                     Some(crate::constants::spl_token_2022_program_id())
+                                                                } else {
+                                                                    Some(crate::constants::spl_token_program_id())
                                                                 }
-                                                            } else {
+                                                            } else if account_keys.iter().any(|k| *k == crate::constants::spl_token_2022_program_id().to_bytes()) {
                                                                 Some(crate::constants::spl_token_2022_program_id())
+                                                            } else {
+                                                                Some(crate::constants::spl_token_program_id())
                                                             };
 
                                                             let _ = self
@@ -472,6 +483,12 @@ impl YellowstoneStreamer {
                                                     self.config.copy_trade_amount_sol, view.symbol, mint, dev_bought_sol, snipe_slippage
                                                 );
 
+                                                let token_prog = if account_keys.iter().any(|k| *k == crate::constants::spl_token_2022_program_id().to_bytes()) {
+                                                    crate::constants::spl_token_2022_program_id()
+                                                } else {
+                                                    crate::constants::spl_token_program_id()
+                                                };
+
                                                 let _ = self
                                                     .trade_sender
                                                     .send(TradeAction::Buy {
@@ -480,7 +497,7 @@ impl YellowstoneStreamer {
                                                         slippage_bps: snipe_slippage,
                                                         curve_state: initial_curve,
                                                         dev_wallet: Some(creator),
-                                                        token_program: Some(crate::constants::spl_token_2022_program_id()),
+                                                        token_program: Some(token_prog),
                                                     })
                                                     .await;
                                             } else {

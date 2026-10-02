@@ -69,12 +69,12 @@ impl BotConfig {
         let copy_trade_amount_sol = env::var("COPY_TRADE_AMOUNT_SOL")
             .ok()
             .and_then(|v| v.parse().ok())
-            .unwrap_or(0.2); // 0.2 SOL default
+            .unwrap_or(0.035); // 0.035 SOL default bullet
 
         let max_position_sol = env::var("MAX_POSITION_SOL")
             .ok()
             .and_then(|v| v.parse().ok())
-            .unwrap_or(2.0); // 2.0 SOL max
+            .unwrap_or(0.07); // 0.07 SOL max (2 bullets)
 
         let slippage_bps = env::var("SLIPPAGE_BPS")
             .ok()
@@ -104,14 +104,14 @@ impl BotConfig {
         let min_creator_buy_sol = env::var("MIN_CREATOR_BUY_SOL")
             .ok()
             .and_then(|v| v.parse().ok())
-            .unwrap_or(0.20); // Minimum 0.20 SOL dev buy required to snipe unbacked launches
+            .unwrap_or(0.20); // Minimum 0.20 SOL dev buy filter
 
         let min_whale_buy_sol = env::var("MIN_WHALE_BUY_SOL")
             .ok()
             .and_then(|v| v.parse().ok())
             .unwrap_or(0.60); // Minimum 0.60 SOL whale buy required to trigger copy-trade
 
-        // Target Top 20 Leaderboard Wallets (comma-separated or loaded from TARGET_WALLETS)
+        // Target Leaderboard Wallets (comma-separated or loaded from TARGET_WALLETS / file)
         let target_wallets = env::var("TARGET_WALLETS")
             .map(|w| {
                 w.split(',')
@@ -120,12 +120,15 @@ impl BotConfig {
                     .collect()
             })
             .unwrap_or_else(|_| {
-                // Sample Top Whale / Smart Money Leaderboard Wallets
-                vec![
-                    "4y2T1N99Z1fK492N28Psp52qf8Dk7uGg8sK5zUqbdvE1".to_string(),
-                    "2k1c4GfX8n6D9sF6jZ8n5k4D8s7F6g5H4j3K2L1jaCf".to_string(),
-                    "BvApZ7m9N8b7V6c5X4z3A2s1D4f5G6h7J8k9L0mSruZ".to_string(),
-                ]
+                if let Ok(content) = std::fs::read_to_string("data/smart_money_wallets.txt") {
+                    content
+                        .split(',')
+                        .map(|s| s.trim().to_string())
+                        .filter(|s| !s.is_empty())
+                        .collect()
+                } else {
+                    vec![]
+                }
             });
 
         Ok(Self {

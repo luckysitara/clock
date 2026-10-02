@@ -462,16 +462,22 @@ impl YellowstoneStreamer {
                                                     cache.insert(mint, initial_curve);
                                                 }
 
-                                                // Smart Money / Dev Concurrence Filter:
-                                                // Only snipe launch if dev put serious SOL into the curve (>= min_creator_buy_sol)
-                                                // OR if a target whale/sniper entered with >= min_whale_buy_sol!
+                                                // Strict Smart Money Concurrence Filter:
+                                                // Anonymous devs use fake 10+ SOL dev buys to bait sniper bots and dump in slot +1.
+                                                // NEVER snipe a launch unless a verified smart-money whale participated!
                                                 let is_smart_money_in_launch = matched_whale.is_some() && dev_bought_sol >= self.config.min_whale_buy_sol;
-                                                let is_dev_committed = dev_bought_sol >= self.config.min_creator_buy_sol;
-                                                if !is_smart_money_in_launch && !is_dev_committed {
-                                                    info!(
-                                                        "🛡️ Skipping unbacked launch [{}] {}: Buy size {:.4} SOL below thresholds (dev min: {:.2}, whale min: {:.2})",
-                                                        view.symbol, mint, dev_bought_sol, self.config.min_creator_buy_sol, self.config.min_whale_buy_sol
-                                                    );
+                                                if !is_smart_money_in_launch {
+                                                    if matched_whale.is_none() {
+                                                        info!(
+                                                            "🛡️ Skipping unbacked launch [{}] {}: Dev initial buy {:.4} SOL ignored (No smart money whale detected)",
+                                                            view.symbol, mint, dev_bought_sol
+                                                        );
+                                                    } else {
+                                                        info!(
+                                                            "🛡️ Skipping launch [{}] {}: Whale buy size {:.4} SOL below threshold ({:.2} SOL)",
+                                                            view.symbol, mint, dev_bought_sol, self.config.min_whale_buy_sol
+                                                        );
+                                                    }
                                                     continue;
                                                 }
 

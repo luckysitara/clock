@@ -32,11 +32,19 @@ use crate::{
     },
 };
 
+#[derive(Clone, Copy)]
+struct RawInstructionView<'a> {
+    program_id_index: usize,
+    accounts: &'a [u8],
+    data: &'a [u8],
+}
+
 pub struct YellowstoneStreamer {
     config: Arc<BotConfig>,
     curve_cache: Arc<RwLock<HashMap<Pubkey, BondingCurveAccountPod>>>,
     position_manager: Arc<PositionManager>,
     trade_sender: mpsc::Sender<TradeAction>,
+    rpc_client: Arc<solana_client::nonblocking::rpc_client::RpcClient>,
 }
 
 impl YellowstoneStreamer {
@@ -46,11 +54,15 @@ impl YellowstoneStreamer {
         position_manager: Arc<PositionManager>,
         trade_sender: mpsc::Sender<TradeAction>,
     ) -> Self {
+        let rpc_client = Arc::new(solana_client::nonblocking::rpc_client::RpcClient::new(
+            config.solana_rpc_url.clone(),
+        ));
         Self {
             config,
             curve_cache,
             position_manager,
             trade_sender,
+            rpc_client,
         }
     }
 
@@ -216,12 +228,18 @@ impl YellowstoneStreamer {
                     }
                 }
 
-                // Real-time Transactions from Top 20 Whales & Token Launches
+                // Real-time Transactions from Top Whales & Token Launches (including Inner CPI bot trades)
                 Some(UpdateOneof::Transaction(tx_update)) => {
                     let tx_info = match tx_update.transaction {
                         Some(t) => t,
                         None => continue,
                     };
+
+                    // Skip transactions that failed on-chain
+                    if tx_info.meta.as_ref().map_or(false, |m| m.err.is_some()) {
+                        continue;
+                    }
+
                     let tx = match tx_info.transaction {
                         Some(t) => t,
                         None => continue,
@@ -231,26 +249,65 @@ impl YellowstoneStreamer {
                         None => continue,
                     };
 
-                    // Extract account keys
-                    let account_keys: Vec<[u8; 32]> = msg_data
+                    // Extract static account keys and loaded addresses from lookup tables (v0 tx support)
+                    let mut account_keys: Vec<[u8; 32]> = msg_data
                         .account_keys
                         .iter()
                         .filter_map(|k| k.as_slice().try_into().ok())
                         .collect();
 
-                    // Check if one of our Top 20 whale wallets is involved
+                    if let Some(ref meta) = tx_info.meta {
+                        for k in &meta.loaded_writable_addresses {
+                            if let Ok(arr) = k.as_slice().try_into() {
+                                account_keys.push(arr);
+                            }
+                        }
+                        for k in &meta.loaded_readonly_addresses {
+                            if let Ok(arr) = k.as_slice().try_into() {
+                                account_keys.push(arr);
+                            }
+                        }
+                    }
+
+                    // Check if one of our target whale wallets is involved
                     let matched_whale = whale_filter.matches_any(&account_keys);
 
                     let pumpfun_bytes = crate::constants::pumpfun_program_id().to_bytes();
 
-                    // Scan instructions
+                    // Flatten both top-level and inner CPI instructions
+                    let mut all_instructions: Vec<RawInstructionView> =
+                        Vec::with_capacity(msg_data.instructions.len() + 16);
+
                     for ix in &msg_data.instructions {
-                        let prog_idx = ix.program_id_index as usize;
+                        all_instructions.push(RawInstructionView {
+                            program_id_index: ix.program_id_index as usize,
+                            accounts: &ix.accounts,
+                            data: &ix.data,
+                        });
+                    }
+
+                    if let Some(ref meta) = tx_info.meta {
+                        for inner in &meta.inner_instructions {
+                            for inner_ix in &inner.instructions {
+                                all_instructions.push(RawInstructionView {
+                                    program_id_index: inner_ix.program_id_index as usize,
+                                    accounts: &inner_ix.accounts,
+                                    data: &inner_ix.data,
+                                });
+                            }
+                        }
+                    }
+
+                    let mut processed_mints = std::collections::HashSet::new();
+
+                    // Scan all instructions (both direct calls and router CPI calls)
+                    for ix in &all_instructions {
+                        let prog_idx = ix.program_id_index;
                         if prog_idx >= account_keys.len() || account_keys[prog_idx] != pumpfun_bytes {
                             continue;
                         }
 
-                        let data = &ix.data;
+                        let data = ix.data;
 
                         // 1. BUY INSTRUCTION
                         if fast_is_discriminator(data, BUY_DISCRIMINATOR_U64) {
@@ -277,6 +334,10 @@ impl YellowstoneStreamer {
                                             let mint =
                                                 Pubkey::new_from_array(account_keys[mint_idx]);
 
+                                            if !processed_mints.insert(mint) {
+                                                continue;
+                                            }
+
                                             if !self.position_manager.has_position(&mint).await {
                                                 let current_invested = self.position_manager.total_invested_sol().await;
                                                 if current_invested + self.config.copy_trade_amount_sol <= self.config.max_position_sol {
@@ -290,8 +351,7 @@ impl YellowstoneStreamer {
                                                     let curve = match curve_state {
                                                         Some(c) => Some(c),
                                                         None => {
-                                                            let rpc = solana_client::nonblocking::rpc_client::RpcClient::new(self.config.solana_rpc_url.clone());
-                                                            if let Ok(acc) = rpc.get_account(&bonding_curve).await {
+                                                            if let Ok(acc) = self.rpc_client.get_account(&bonding_curve).await {
                                                                 if let Some(pod) = BondingCurveAccountPod::read_from_account(&acc.data) {
                                                                     let mut cache = self.curve_cache.write().await;
                                                                     cache.insert(mint, pod);
@@ -338,7 +398,7 @@ impl YellowstoneStreamer {
                                                                 }
                                                             } else if account_keys.iter().any(|k| *k == crate::constants::spl_token_2022_program_id().to_bytes()) {
                                                                 Some(crate::constants::spl_token_2022_program_id())
-                                                            } else {
+                                                              } else {
                                                                 Some(crate::constants::spl_token_program_id())
                                                             };
 
@@ -377,14 +437,32 @@ impl YellowstoneStreamer {
                                     let mint_idx = ix.accounts[2] as usize;
                                     if mint_idx < account_keys.len() {
                                         let mint = Pubkey::new_from_array(account_keys[mint_idx]);
-                                        let signer = Pubkey::new_from_array(account_keys[0]);
+                                        let seller = if ix.accounts.len() > 6 && (ix.accounts[6] as usize) < account_keys.len() {
+                                            Pubkey::new_from_array(account_keys[ix.accounts[6] as usize])
+                                        } else {
+                                            Pubkey::new_from_array(account_keys[0])
+                                        };
 
                                         // Check if this is the token creator dumping
-                                        if let Some(pos) = self
+                                        let dev_dump_pos = match self
                                             .position_manager
-                                            .check_dev_dump(&mint, &signer, sell_pod.amount)
+                                            .check_dev_dump(&mint, &seller, sell_pod.amount)
                                             .await
                                         {
+                                            Some(pos) => Some(pos),
+                                            None => {
+                                                let fee_payer = Pubkey::new_from_array(account_keys[0]);
+                                                if fee_payer != seller {
+                                                    self.position_manager
+                                                        .check_dev_dump(&mint, &fee_payer, sell_pod.amount)
+                                                        .await
+                                                } else {
+                                                    None
+                                                }
+                                            }
+                                        };
+
+                                        if let Some(pos) = dev_dump_pos {
                                             let (bonding_curve, _) = crate::constants::derive_bonding_curve(&mint);
                                             let curve_state = {
                                                 let cache = self.curve_cache.read().await;
@@ -443,29 +521,29 @@ impl YellowstoneStreamer {
                                                     creator,
                                                 };
 
-                                                // Inspect if creator bought initial tokens in the same transaction
+                                                // Inspect if creator bought initial tokens in the same transaction (top-level and inner CPI)
                                                 let mut dev_bought_sol = 0.0;
-                                                for other_ix in &msg_data.instructions {
-                                                    let other_prog_idx = other_ix.program_id_index as usize;
+                                                for other_ix in &all_instructions {
+                                                    let other_prog_idx = other_ix.program_id_index;
                                                     if other_prog_idx < account_keys.len() && account_keys[other_prog_idx] == pumpfun_bytes {
-                                                        if fast_is_discriminator(&other_ix.data, BUY_DISCRIMINATOR_U64) {
-                                                            if let Some(buy_pod) = PumpFunBuyPod::read_from_raw(&other_ix.data) {
-                                                            if other_ix.accounts.len() > 2 {
-                                                                let m_idx = other_ix.accounts[2] as usize;
-                                                                if m_idx < account_keys.len() && account_keys[m_idx] == mint.to_bytes() {
-                                                                    let dev_sol = initial_curve.apply_buy(buy_pod.amount);
-                                                                    dev_bought_sol = dev_sol.unwrap_or(0) as f64 / 1e9;
-                                                                    info!(
-                                                                        "🎯 Dev initial buy detected in create tx: {} tokens (~{:.4} SOL). Curve updated.",
-                                                                        buy_pod.amount,
-                                                                        dev_bought_sol
-                                                                    );
+                                                        if fast_is_discriminator(other_ix.data, BUY_DISCRIMINATOR_U64) {
+                                                            if let Some(buy_pod) = PumpFunBuyPod::read_from_raw(other_ix.data) {
+                                                                if other_ix.accounts.len() > 2 {
+                                                                    let m_idx = other_ix.accounts[2] as usize;
+                                                                    if m_idx < account_keys.len() && account_keys[m_idx] == mint.to_bytes() {
+                                                                        let dev_sol = initial_curve.apply_buy(buy_pod.amount);
+                                                                        dev_bought_sol = dev_sol.unwrap_or(0) as f64 / 1e9;
+                                                                        info!(
+                                                                            "🎯 Dev initial buy detected in create tx: {} tokens (~{:.4} SOL). Curve updated.",
+                                                                            buy_pod.amount,
+                                                                            dev_bought_sol
+                                                                        );
+                                                                    }
                                                                 }
                                                             }
                                                         }
                                                     }
                                                 }
-                                            }
 
                                                 {
                                                     let mut cache = self.curve_cache.write().await;

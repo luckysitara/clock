@@ -23,3 +23,7 @@ Thumbs.db
 # Log files
 *.log
 logs/
+
+# Live position state
+data/positions.json
+data/positions.json.tmp

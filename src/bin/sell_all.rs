@@ -64,6 +64,7 @@ async fn main() -> Result<()> {
         tip_engine,
         Arc::clone(&position_manager),
         config.solana_rpc_url.clone(),
+        config.dual_route_rpc,
     ));
 
     // Query token accounts

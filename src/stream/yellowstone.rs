@@ -28,7 +28,7 @@ use crate::{
     },
     engine::{
         executor::TradeAction,
-        position_manager::{ExitReason, PositionManager},
+        position_manager::{ExitReason, PositionManager, Reservation},
     },
 };
 
@@ -66,6 +66,21 @@ impl YellowstoneStreamer {
         }
     }
 
+    /// Bonding curve state from the cache (keyed by mint or curve PDA), falling back to RPC
+    async fn get_curve(&self, mint: &Pubkey) -> Option<BondingCurveAccountPod> {
+        let (bonding_curve, _) = crate::constants::derive_bonding_curve(mint);
+        {
+            let cache = self.curve_cache.read().await;
+            if let Some(c) = cache.get(mint).or_else(|| cache.get(&bonding_curve)) {
+                return Some(*c);
+            }
+        }
+        let acc = self.rpc_client.get_account(&bonding_curve).await.ok()?;
+        let pod = BondingCurveAccountPod::read_from_account(&acc.data)?;
+        self.curve_cache.write().await.insert(bonding_curve, pod);
+        Some(pod)
+    }
+
     /// Connect to Triton Yellowstone gRPC with retry loop
     pub async fn run_loop(&self) -> Result<()> {
         let target_pubkeys: Vec<Pubkey> = self
@@ -101,6 +116,7 @@ impl YellowstoneStreamer {
     }
 
     async fn stream_session(&self, whale_filter: &FastPubkeyFilter) -> Result<()> {
+        let max_position_lamports = (self.config.max_position_sol * 1e9) as u64;
         let mut builder = GeyserGrpcClient::build_from_shared(self.config.yellowstone_grpc_url.clone())
             .context("Failed to build gRPC client from endpoint URL")?;
 
@@ -191,11 +207,25 @@ impl YellowstoneStreamer {
                             {
                                 let current_price = curve_pod.current_spot_price_sol();
 
-                                // Update in-memory curve cache
-                                {
+                                // Update in-memory curve cache (graduated curves are dropped; size is capped)
+                                let newly_graduated = {
                                     let mut cache = self.curve_cache.write().await;
-                                    cache.insert(pubkey, curve_pod);
-                                }
+                                    if curve_pod.complete {
+                                        cache.remove(&pubkey).map_or(false, |prev| !prev.complete)
+                                    } else {
+                                        if cache.len() >= self.config.max_curve_cache_entries
+                                            && !cache.contains_key(&pubkey)
+                                        {
+                                            info!(
+                                                "🧹 Curve cache reached {} entries, clearing (misses fall back to RPC)",
+                                                cache.len()
+                                            );
+                                            cache.clear();
+                                        }
+                                        cache.insert(pubkey, curve_pod);
+                                        false
+                                    }
+                                };
 
                                 // Check active position exits
                                 if let Some((pos, reason)) = self
@@ -217,7 +247,7 @@ impl YellowstoneStreamer {
                                         .await;
                                 }
 
-                                if curve_pod.complete {
+                                if newly_graduated {
                                     info!(
                                         "🎓 GRADUATION DETECTED: Curve {} reached 100%! Ready for PumpSwap migration.",
                                         pubkey
@@ -311,120 +341,105 @@ impl YellowstoneStreamer {
 
                         // 1. BUY INSTRUCTION
                         if fast_is_discriminator(data, BUY_DISCRIMINATOR_U64) {
-                            if let Some(whale) = matched_whale {
-                                if let Some(buy_pod) = PumpFunBuyPod::read_from_raw(data) {
-                                    let whale_sol_spent = buy_pod.max_sol_cost as f64 / 1e9;
+                            if matched_whale.is_none() {
+                                continue;
+                            }
+                            // The buyer (account #6) or the fee payer must be a target whale,
+                            // not merely some account referenced elsewhere in the transaction
+                            let buyer_is_whale = ix
+                                .accounts
+                                .get(6)
+                                .and_then(|&i| account_keys.get(i as usize))
+                                .and_then(|k| whale_filter.matches_any(std::slice::from_ref(k)));
+                            let whale = match buyer_is_whale
+                                .or_else(|| account_keys.get(..1).and_then(|k| whale_filter.matches_any(k)))
+                            {
+                                Some(w) => w,
+                                None => continue,
+                            };
+                            let Some(buy_pod) = PumpFunBuyPod::read_from_raw(data) else { continue };
+
+                            let whale_sol_spent = buy_pod.max_sol_cost as f64 / 1e9;
+                            info!(
+                                "🚨 WHALE DETECTED [{}]: Bought on Pump.fun with up to {} SOL",
+                                whale, whale_sol_spent
+                            );
+
+                            if whale_sol_spent < self.config.min_whale_buy_sol {
+                                info!(
+                                    "🛡️ Skipping low-conviction whale buy [{}]: Spent only {:.4} SOL (< {:.2} SOL floor)",
+                                    whale, whale_sol_spent, self.config.min_whale_buy_sol
+                                );
+                                continue;
+                            }
+
+                            // Mint is account index #2 in Buy instruction
+                            let Some(&mint_idx) = ix.accounts.get(2) else { continue };
+                            let Some(mint_bytes) = account_keys.get(mint_idx as usize) else { continue };
+                            let mint = Pubkey::new_from_array(*mint_bytes);
+
+                            if !processed_mints.insert(mint) {
+                                continue;
+                            }
+
+                            let my_sol_lamports = (self.config.copy_trade_amount_sol * 1e9) as u64;
+                            match self.position_manager.try_reserve(&mint, my_sol_lamports, max_position_lamports).await {
+                                Reservation::Reserved => {}
+                                Reservation::AlreadyActive => continue,
+                                Reservation::CapitalLimit { committed_sol } => {
                                     info!(
-                                        "🚨 WHALE DETECTED [{}]: Bought on Pump.fun with up to {} SOL",
-                                        whale, whale_sol_spent
+                                        "⏸️ Max open capital reached ({:.2}/{:.2} SOL). Skipping whale copy-trade on {}",
+                                        committed_sol, self.config.max_position_sol, mint
                                     );
-
-                                    if whale_sol_spent < self.config.min_whale_buy_sol {
-                                        info!(
-                                            "🛡️ Skipping low-conviction whale buy [{}]: Spent only {:.4} SOL (< {:.2} SOL floor)",
-                                            whale, whale_sol_spent, self.config.min_whale_buy_sol
-                                        );
-                                        continue;
-                                    }
-
-                                    // Mint is typically account index #2 in Buy instruction
-                                    if ix.accounts.len() > 2 {
-                                        let mint_idx = ix.accounts[2] as usize;
-                                        if mint_idx < account_keys.len() {
-                                            let mint =
-                                                Pubkey::new_from_array(account_keys[mint_idx]);
-
-                                            if !processed_mints.insert(mint) {
-                                                continue;
-                                            }
-
-                                            if !self.position_manager.has_position(&mint).await {
-                                                let current_invested = self.position_manager.total_invested_sol().await;
-                                                if current_invested + self.config.copy_trade_amount_sol <= self.config.max_position_sol {
-                                                    // Get current bonding curve state (by mint, bonding curve PDA, or RPC fallback)
-                                                    let (bonding_curve, _) = crate::constants::derive_bonding_curve(&mint);
-                                                    let curve_state = {
-                                                        let cache = self.curve_cache.read().await;
-                                                        cache.get(&mint).or_else(|| cache.get(&bonding_curve)).copied()
-                                                    };
-
-                                                    let curve = match curve_state {
-                                                        Some(c) => Some(c),
-                                                        None => {
-                                                            if let Ok(acc) = self.rpc_client.get_account(&bonding_curve).await {
-                                                                if let Some(pod) = BondingCurveAccountPod::read_from_account(&acc.data) {
-                                                                    let mut cache = self.curve_cache.write().await;
-                                                                    cache.insert(mint, pod);
-                                                                    cache.insert(bonding_curve, pod);
-                                                                    Some(pod)
-                                                                } else {
-                                                                    None
-                                                                }
-                                                            } else {
-                                                                None
-                                                            }
-                                                        }
-                                                    };
-
-                                                    if let Some(curve) = curve {
-                                                        if !curve.complete {
-                                                            let my_sol_lamports = (self
-                                                                .config
-                                                                .copy_trade_amount_sol
-                                                                * 1e9)
-                                                                as u64;
-
-                                                            info!(
-                                                                "⚡ TRIGGERING WHALE COPY-TRADE BUY: {} SOL on Mint {}",
-                                                                self.config.copy_trade_amount_sol, mint
-                                                            );
-
-                                                            let copy_slippage = std::cmp::max(self.config.slippage_bps, 1500);
-                                                            let token_prog = if ix.accounts.len() > 8 {
-                                                                let token_program_idx = ix.accounts[8] as usize;
-                                                                if token_program_idx < account_keys.len() {
-                                                                    let prog = Pubkey::new_from_array(account_keys[token_program_idx]);
-                                                                    if prog == crate::constants::spl_token_2022_program_id() || prog == crate::constants::spl_token_program_id() {
-                                                                        Some(prog)
-                                                                    } else if account_keys.iter().any(|k| *k == crate::constants::spl_token_2022_program_id().to_bytes()) {
-                                                                        Some(crate::constants::spl_token_2022_program_id())
-                                                                    } else {
-                                                                        Some(crate::constants::spl_token_program_id())
-                                                                    }
-                                                                } else if account_keys.iter().any(|k| *k == crate::constants::spl_token_2022_program_id().to_bytes()) {
-                                                                    Some(crate::constants::spl_token_2022_program_id())
-                                                                } else {
-                                                                    Some(crate::constants::spl_token_program_id())
-                                                                }
-                                                            } else if account_keys.iter().any(|k| *k == crate::constants::spl_token_2022_program_id().to_bytes()) {
-                                                                Some(crate::constants::spl_token_2022_program_id())
-                                                              } else {
-                                                                Some(crate::constants::spl_token_program_id())
-                                                            };
-
-                                                            let _ = self
-                                                                .trade_sender
-                                                                .send(TradeAction::Buy {
-                                                                    mint,
-                                                                    sol_amount_lamports: my_sol_lamports,
-                                                                    slippage_bps: copy_slippage,
-                                                                    curve_state: curve,
-                                                                    dev_wallet: None,
-                                                                    token_program: token_prog,
-                                                                })
-                                                                .await;
-                                                        }
-                                                    }
-                                                } else {
-                                                    info!(
-                                                        "⏸️ Max open capital reached ({:.2}/{:.2} SOL). Skipping whale copy-trade on {}",
-                                                        current_invested, self.config.max_position_sol, mint
-                                                    );
-                                                }
-                                            }
-                                        }
-                                    }
+                                    continue;
                                 }
+                            }
+
+                            let curve = match self.get_curve(&mint).await {
+                                Some(c) if !c.complete => c,
+                                _ => {
+                                    self.position_manager.release(&mint).await;
+                                    continue;
+                                }
+                            };
+
+                            info!(
+                                "⚡ TRIGGERING WHALE COPY-TRADE BUY: {} SOL on Mint {}",
+                                self.config.copy_trade_amount_sol, mint
+                            );
+
+                            let copy_slippage = std::cmp::max(self.config.slippage_bps, 1500);
+                            let token_2022 = crate::constants::spl_token_2022_program_id();
+                            let spl_token = crate::constants::spl_token_program_id();
+                            let ix_token_prog = ix
+                                .accounts
+                                .get(8)
+                                .and_then(|&i| account_keys.get(i as usize))
+                                .map(|k| Pubkey::new_from_array(*k))
+                                .filter(|p| *p == token_2022 || *p == spl_token);
+                            let token_prog = ix_token_prog.unwrap_or_else(|| {
+                                if account_keys.iter().any(|k| *k == token_2022.to_bytes()) {
+                                    token_2022
+                                } else {
+                                    spl_token
+                                }
+                            });
+
+                            if self
+                                .trade_sender
+                                .send(TradeAction::Buy {
+                                    mint,
+                                    sol_amount_lamports: my_sol_lamports,
+                                    slippage_bps: copy_slippage,
+                                    curve_state: curve,
+                                    dev_wallet: None,
+                                    dev_initial_balance: 0,
+                                    token_program: Some(token_prog),
+                                })
+                                .await
+                                .is_err()
+                            {
+                                self.position_manager.release(&mint).await;
                             }
                         }
 
@@ -463,24 +478,24 @@ impl YellowstoneStreamer {
                                         };
 
                                         if let Some(pos) = dev_dump_pos {
-                                            let (bonding_curve, _) = crate::constants::derive_bonding_curve(&mint);
-                                            let curve_state = {
-                                                let cache = self.curve_cache.read().await;
-                                                cache.get(&mint).or_else(|| cache.get(&bonding_curve)).copied()
-                                            };
-
-                                            if let Some(curve) = curve_state {
-                                                let _ = self
-                                                    .trade_sender
-                                                    .send(TradeAction::Sell {
-                                                        mint,
-                                                        token_amount: pos.token_balance,
-                                                        slippage_bps: self.config.slippage_bps,
-                                                        curve_state: curve,
-                                                        is_panic: true,
-                                                        token_program: Some(pos.token_program),
-                                                    })
-                                                    .await;
+                                            match self.get_curve(&mint).await {
+                                                Some(curve) => {
+                                                    let _ = self
+                                                        .trade_sender
+                                                        .send(TradeAction::Sell {
+                                                            mint,
+                                                            token_amount: pos.token_balance,
+                                                            slippage_bps: self.config.slippage_bps,
+                                                            curve_state: curve,
+                                                            is_panic: true,
+                                                            token_program: Some(pos.token_program),
+                                                        })
+                                                        .await;
+                                                }
+                                                None => {
+                                                    error!("❌ Dev dump on {} but curve state unavailable; panic sell not sent", mint);
+                                                    self.position_manager.unmark_selling(&mint).await;
+                                                }
                                             }
                                         }
                                     }
@@ -507,99 +522,115 @@ impl YellowstoneStreamer {
                                             view.symbol, view.name, mint, creator
                                         );
 
-                                        // Option C Hybrid: First-Block Launch Snipe
-                                        if !self.position_manager.has_position(&mint).await {
-                                            let current_invested = self.position_manager.total_invested_sol().await;
-                                            if current_invested + self.config.copy_trade_amount_sol <= self.config.max_position_sol {
-                                                let mut initial_curve = BondingCurveAccountPod {
-                                                    virtual_token_reserves: INITIAL_VIRTUAL_TOKEN_RESERVES,
-                                                    virtual_sol_reserves: INITIAL_VIRTUAL_SOL_RESERVES,
-                                                    real_token_reserves: INITIAL_REAL_TOKEN_RESERVES,
-                                                    real_sol_reserves: 0,
-                                                    token_total_supply: TOTAL_TOKEN_SUPPLY,
-                                                    complete: false,
-                                                    creator,
-                                                };
+                                        // A later Buy ix in this same tx must not trigger a second (copy-trade) buy
+                                        if !processed_mints.insert(mint) {
+                                            continue;
+                                        }
 
-                                                // Inspect if creator bought initial tokens in the same transaction (top-level and inner CPI)
-                                                let mut dev_bought_sol = 0.0;
-                                                for other_ix in &all_instructions {
-                                                    let other_prog_idx = other_ix.program_id_index;
-                                                    if other_prog_idx < account_keys.len() && account_keys[other_prog_idx] == pumpfun_bytes {
-                                                        if fast_is_discriminator(other_ix.data, BUY_DISCRIMINATOR_U64) {
-                                                            if let Some(buy_pod) = PumpFunBuyPod::read_from_raw(other_ix.data) {
-                                                                if other_ix.accounts.len() > 2 {
-                                                                    let m_idx = other_ix.accounts[2] as usize;
-                                                                    if m_idx < account_keys.len() && account_keys[m_idx] == mint.to_bytes() {
-                                                                        let dev_sol = initial_curve.apply_buy(buy_pod.amount);
-                                                                        dev_bought_sol = dev_sol.unwrap_or(0) as f64 / 1e9;
-                                                                        info!(
-                                                                            "🎯 Dev initial buy detected in create tx: {} tokens (~{:.4} SOL). Curve updated.",
-                                                                            buy_pod.amount,
-                                                                            dev_bought_sol
-                                                                        );
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
+                                        // Replay every buy of this mint in the create tx (top-level and inner CPI)
+                                        // on a fresh curve, attributing SOL to the dev and to target whales
+                                        let mut initial_curve = BondingCurveAccountPod {
+                                            virtual_token_reserves: INITIAL_VIRTUAL_TOKEN_RESERVES,
+                                            virtual_sol_reserves: INITIAL_VIRTUAL_SOL_RESERVES,
+                                            real_token_reserves: INITIAL_REAL_TOKEN_RESERVES,
+                                            real_sol_reserves: 0,
+                                            token_total_supply: TOTAL_TOKEN_SUPPLY,
+                                            complete: false,
+                                            creator,
+                                        };
+                                        let mut dev_bought_sol = 0.0;
+                                        let mut dev_tokens: u64 = 0;
+                                        let mut whale_bought_sol = 0.0;
+                                        for other_ix in &all_instructions {
+                                            if account_keys.get(other_ix.program_id_index) != Some(&pumpfun_bytes)
+                                                || !fast_is_discriminator(other_ix.data, BUY_DISCRIMINATOR_U64)
+                                            {
+                                                continue;
+                                            }
+                                            let Some(buy_pod) = PumpFunBuyPod::read_from_raw(other_ix.data) else { continue };
+                                            let is_this_mint = other_ix
+                                                .accounts
+                                                .get(2)
+                                                .and_then(|&i| account_keys.get(i as usize))
+                                                == Some(&mint.to_bytes());
+                                            if !is_this_mint {
+                                                continue;
+                                            }
+                                            let sol = initial_curve.apply_buy(buy_pod.amount).unwrap_or(0) as f64 / 1e9;
+                                            let buyer = other_ix
+                                                .accounts
+                                                .get(6)
+                                                .and_then(|&i| account_keys.get(i as usize))
+                                                .or_else(|| account_keys.first());
+                                            if buyer == Some(&creator.to_bytes()) {
+                                                dev_bought_sol += sol;
+                                                dev_tokens = dev_tokens.saturating_add(buy_pod.amount);
+                                            }
+                                            if let Some(w) = buyer.and_then(|k| whale_filter.matches_any(std::slice::from_ref(k))) {
+                                                whale_bought_sol += sol;
+                                                info!("🐋 Whale {} bought {:.4} SOL in create tx of {}", w, sol, mint);
+                                            }
+                                        }
+                                        if dev_tokens > 0 {
+                                            info!(
+                                                "🎯 Dev initial buy detected in create tx: {} tokens (~{:.4} SOL). Curve updated.",
+                                                dev_tokens, dev_bought_sol
+                                            );
+                                        }
 
-                                                {
-                                                    let mut cache = self.curve_cache.write().await;
-                                                    cache.insert(mint, initial_curve);
-                                                }
+                                        self.curve_cache.write().await.insert(mint, initial_curve);
 
-                                                // Strict Smart Money Concurrence Filter:
-                                                // Anonymous devs use fake 10+ SOL dev buys to bait sniper bots and dump in slot +1.
-                                                // NEVER snipe a launch unless a verified smart-money whale participated!
-                                                let is_smart_money_in_launch = matched_whale.is_some() && dev_bought_sol >= self.config.min_whale_buy_sol;
-                                                if !is_smart_money_in_launch {
-                                                    if matched_whale.is_none() {
-                                                        info!(
-                                                            "🛡️ Skipping unbacked launch [{}] {}: Dev initial buy {:.4} SOL ignored (No smart money whale detected)",
-                                                            view.symbol, mint, dev_bought_sol
-                                                        );
-                                                    } else {
-                                                        info!(
-                                                            "🛡️ Skipping launch [{}] {}: Whale buy size {:.4} SOL below threshold ({:.2} SOL)",
-                                                            view.symbol, mint, dev_bought_sol, self.config.min_whale_buy_sol
-                                                        );
-                                                    }
-                                                    continue;
-                                                }
+                                        // Strict Smart Money Concurrence Filter:
+                                        // Anonymous devs use fake 10+ SOL dev buys to bait sniper bots and dump in slot +1.
+                                        // Only snipe when a target whale itself bought at least MIN_WHALE_BUY_SOL in the launch.
+                                        if whale_bought_sol < self.config.min_whale_buy_sol {
+                                            info!(
+                                                "🛡️ Skipping launch [{}] {}: whale buy {:.4} SOL < {:.2} SOL floor (dev buy {:.4} SOL)",
+                                                view.symbol, mint, whale_bought_sol, self.config.min_whale_buy_sol, dev_bought_sol
+                                            );
+                                            continue;
+                                        }
 
-                                                let my_sol_lamports = (self.config.copy_trade_amount_sol * 1e9) as u64;
-                                                let snipe_slippage = std::cmp::max(self.config.slippage_bps, 2500);
-
-                                                info!(
-                                                    "⚡ TRIGGERING FIRST-BLOCK SNIPE: {} SOL on [{}] Mint: {} (Dev Buy: {:.4} SOL | slippage: {} bps)",
-                                                    self.config.copy_trade_amount_sol, view.symbol, mint, dev_bought_sol, snipe_slippage
-                                                );
-
-                                                let token_prog = if account_keys.iter().any(|k| *k == crate::constants::spl_token_2022_program_id().to_bytes()) {
-                                                    crate::constants::spl_token_2022_program_id()
-                                                } else {
-                                                    crate::constants::spl_token_program_id()
-                                                };
-
-                                                let _ = self
-                                                    .trade_sender
-                                                    .send(TradeAction::Buy {
-                                                        mint,
-                                                        sol_amount_lamports: my_sol_lamports,
-                                                        slippage_bps: snipe_slippage,
-                                                        curve_state: initial_curve,
-                                                        dev_wallet: Some(creator),
-                                                        token_program: Some(token_prog),
-                                                    })
-                                                    .await;
-                                            } else {
+                                        let my_sol_lamports = (self.config.copy_trade_amount_sol * 1e9) as u64;
+                                        match self.position_manager.try_reserve(&mint, my_sol_lamports, max_position_lamports).await {
+                                            Reservation::Reserved => {}
+                                            Reservation::AlreadyActive => continue,
+                                            Reservation::CapitalLimit { committed_sol } => {
                                                 info!(
                                                     "⏸️ Max open capital reached ({:.2}/{:.2} SOL). Skipping snipe on [{}]",
-                                                    current_invested, self.config.max_position_sol, view.symbol
+                                                    committed_sol, self.config.max_position_sol, view.symbol
                                                 );
+                                                continue;
                                             }
+                                        }
+
+                                        let snipe_slippage = std::cmp::max(self.config.slippage_bps, 2500);
+                                        info!(
+                                            "⚡ TRIGGERING FIRST-BLOCK SNIPE: {} SOL on [{}] Mint: {} (Whale Buy: {:.4} SOL | Dev Buy: {:.4} SOL | slippage: {} bps)",
+                                            self.config.copy_trade_amount_sol, view.symbol, mint, whale_bought_sol, dev_bought_sol, snipe_slippage
+                                        );
+
+                                        let token_prog = if account_keys.iter().any(|k| *k == crate::constants::spl_token_2022_program_id().to_bytes()) {
+                                            crate::constants::spl_token_2022_program_id()
+                                        } else {
+                                            crate::constants::spl_token_program_id()
+                                        };
+
+                                        if self
+                                            .trade_sender
+                                            .send(TradeAction::Buy {
+                                                mint,
+                                                sol_amount_lamports: my_sol_lamports,
+                                                slippage_bps: snipe_slippage,
+                                                curve_state: initial_curve,
+                                                dev_wallet: Some(creator),
+                                                dev_initial_balance: dev_tokens,
+                                                token_program: Some(token_prog),
+                                            })
+                                            .await
+                                            .is_err()
+                                        {
+                                            self.position_manager.release(&mint).await;
                                         }
                                     }
                                 }

@@ -61,6 +61,9 @@ async fn main() -> Result<()> {
             min_creator_buy_sol: 0.20,
             min_whale_buy_sol: 0.60,
             target_wallets: vec![],
+            dual_route_rpc: true,
+            positions_file: "data/positions.json".to_string(),
+            max_curve_cache_entries: 50_000,
         }
     }));
 
@@ -98,6 +101,8 @@ async fn main() -> Result<()> {
     info!("   Trailing Stop Loss:  {}%", config.trailing_stop_pct * 100.0);
     info!("   Hard Stop Loss:      -{}%", config.hard_stop_loss_pct * 100.0);
     info!("   Take Profit Target:  {}x", config.take_profit_pct);
+    info!("   Min Whale Buy:       {} SOL", config.min_whale_buy_sol);
+    info!("   Routing:             {}", if config.dual_route_rpc { "Jito + public RPC" } else { "Jito bundles only" });
 
     // 3. Initialize Blockhash Cache Background Task
     let blockhash_cache = Arc::new(BlockhashCache::new());
@@ -118,7 +123,7 @@ async fn main() -> Result<()> {
         config.hard_stop_loss_pct,
         config.take_profit_pct,
         config.dev_dump_threshold_pct,
-    ));
+    ).with_state_file(&config.positions_file));
 
     // 5. Initialize In-Memory Bonding Curve Cache
     let curve_cache = Arc::new(RwLock::new(HashMap::new()));
@@ -138,6 +143,7 @@ async fn main() -> Result<()> {
         tip_engine,
         Arc::clone(&position_manager),
         config.solana_rpc_url.clone(),
+        config.dual_route_rpc,
     ));
 
     executor.spawn_worker(rx_trades);

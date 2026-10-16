@@ -23,6 +23,9 @@ pub struct BotConfig {
     pub min_creator_buy_sol: f64,
     pub min_whale_buy_sol: f64,
     pub target_wallets: Vec<String>,
+    pub dual_route_rpc: bool,
+    pub positions_file: String,
+    pub max_curve_cache_entries: usize,
 }
 
 impl BotConfig {
@@ -131,6 +134,20 @@ impl BotConfig {
                 }
             });
 
+        // Also send transactions via public RPC sendTransaction (true) or Jito bundles only (false)
+        let dual_route_rpc = env::var("DUAL_ROUTE_RPC")
+            .ok()
+            .map(|v| !matches!(v.trim().to_ascii_lowercase().as_str(), "0" | "false" | "no" | "off"))
+            .unwrap_or(true);
+
+        let positions_file = env::var("POSITIONS_FILE")
+            .unwrap_or_else(|_| "data/positions.json".to_string());
+
+        let max_curve_cache_entries = env::var("MAX_CURVE_CACHE_ENTRIES")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(50_000);
+
         Ok(Self {
             solana_rpc_url,
             yellowstone_grpc_url,
@@ -150,6 +167,9 @@ impl BotConfig {
             min_creator_buy_sol,
             min_whale_buy_sol,
             target_wallets,
+            dual_route_rpc,
+            positions_file,
+            max_curve_cache_entries,
         })
     }
 

@@ -1,21 +1,17 @@
 use anyhow::{Context, Result};
-use base64::Engine;
-use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signer::Signer;
-use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
 use clockit::{
     config::BotConfig,
-    constants::derive_bonding_curve,
-    decoders::BondingCurveAccountPod,
     engine::{
         blockhash_cache::BlockhashCache,
         executor::{ExecutionEngine, TradeAction},
         jito::JitoClient,
         position_manager::PositionManager,
         tip_engine::TipEngine,
+        wallet::{fetch_bonding_curve, fetch_token_holdings},
     },
 };
 
@@ -38,7 +34,9 @@ async fn main() -> Result<()> {
 
     let blockhash_cache = Arc::new(BlockhashCache::new());
     blockhash_cache.spawn_updater(config.solana_rpc_url.clone(), Duration::from_millis(1500));
-    tokio::time::sleep(Duration::from_millis(1000)).await;
+    if !blockhash_cache.wait_until_ready(Duration::from_secs(15)).await {
+        anyhow::bail!("No blockhash from {} after 15s; check SOLANA_RPC_URL", config.solana_rpc_url);
+    }
 
     let tip_engine = Arc::new(TipEngine::new(
         config.min_tip_lamports,
@@ -67,104 +65,57 @@ async fn main() -> Result<()> {
         config.dual_route_rpc,
     ));
 
-    // Query token accounts
     let http = reqwest::Client::new();
-    let payload = serde_json::json!({
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "getTokenAccountsByOwner",
-        "params": [
-            wallet_pubkey.to_string(),
-            {"programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"},
-            {"encoding": "jsonParsed"}
-        ]
-    });
-
-    let resp: serde_json::Value = http
-        .post(&config.solana_rpc_url)
-        .json(&payload)
-        .send()
-        .await?
-        .json()
-        .await?;
-
-    let accounts = resp
-        .get("result")
-        .and_then(|r| r.get("value"))
-        .and_then(|v| v.as_array())
+    let holdings = fetch_token_holdings(&http, &config.solana_rpc_url, &wallet_pubkey)
+        .await
         .context("Failed to get token accounts")?;
 
-    let mut open_tokens = Vec::new();
-
-    for acc in accounts {
-        if let Some(info) = acc.get("account").and_then(|a| a.get("data")).and_then(|d| d.get("parsed")).and_then(|p| p.get("info")) {
-            let mint_str = info.get("mint").and_then(|m| m.as_str()).unwrap_or_default();
-            let amount_str = info.get("tokenAmount").and_then(|t| t.get("amount")).and_then(|a| a.as_str()).unwrap_or("0");
-            let token_amount: u64 = amount_str.parse().unwrap_or(0);
-
-            if token_amount > 0 {
-                let mint = Pubkey::from_str(mint_str)?;
-                open_tokens.push((mint, token_amount));
-            }
-        }
-    }
-
-    if open_tokens.is_empty() {
+    if holdings.is_empty() {
         println!("✅ No open token positions found in wallet!");
         return Ok(());
     }
 
-    println!("Found {} open position(s) to sell:", open_tokens.len());
+    println!("Found {} token balance(s) to check:", holdings.len());
 
-    for (mint, amount) in open_tokens {
+    for holding in holdings {
+        let mint = holding.mint;
         println!("\n------------------------------------------------------------");
         println!("🚀 Exiting position: Mint {}", mint);
-        println!("   Token Balance: {} (raw: {})", amount as f64 / 1e6, amount);
+        println!("   Token Balance: {} (raw: {}) | Token Prog: {}", holding.amount as f64 / 1e6, holding.amount, holding.token_program);
 
-        let (bonding_curve, _) = derive_bonding_curve(&mint);
-        let curve_payload = serde_json::json!({
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "getAccountInfo",
-            "params": [
-                bonding_curve.to_string(),
-                {"encoding": "base64"}
-            ]
-        });
-
-        let c_resp: serde_json::Value = http
-            .post(&config.solana_rpc_url)
-            .json(&curve_payload)
-            .send()
-            .await?
-            .json()
-            .await?;
-
-        let data_arr = c_resp
-            .get("result")
-            .and_then(|r| r.get("value"))
-            .and_then(|v| v.get("data"))
-            .and_then(|d| d.as_array())
-            .context("Failed to fetch curve account data")?;
-
-        let b64 = data_arr.first().and_then(|d| d.as_str()).context("Invalid b64")?;
-        let bytes = base64::engine::general_purpose::STANDARD.decode(b64)?;
-        let curve_pod = BondingCurveAccountPod::read_from_account(&bytes).context("Failed to parse curve POD")?;
+        let curve_pod = match fetch_bonding_curve(&http, &config.solana_rpc_url, &mint).await {
+            Ok(Some(pod)) => pod,
+            Ok(None) => {
+                println!("   ⏭️  Not a Pump.fun bonding curve token, skipping");
+                continue;
+            }
+            Err(e) => {
+                println!("   ❌ Failed to fetch curve: {:#}", e);
+                continue;
+            }
+        };
+        if curve_pod.complete {
+            println!("   🎓 Curve graduated: sell this on PumpSwap/Raydium, skipping");
+            continue;
+        }
 
         println!("   Current Curve Spot Price: {:.10} SOL", curve_pod.current_spot_price_sol());
         println!("   Real SOL in Curve: {:.4} SOL", curve_pod.real_sol_reserves as f64 / 1e9);
 
         let sell_action = TradeAction::Sell {
             mint,
-            token_amount: amount,
+            token_amount: holding.amount,
             slippage_bps: 1000, // 10% slippage floor
             curve_state: curve_pod,
             is_panic: false,
-            token_program: None,
+            token_program: Some(holding.token_program),
         };
 
-        println!("   Broadcasting Jito + RPC Dual-Routed Sell Transaction...");
-        executor.execute_action(sell_action).await?;
+        println!("   Broadcasting sell transaction...");
+        if let Err(e) = executor.execute_action(sell_action).await {
+            println!("   ❌ Sell failed for {}: {:#}", mint, e);
+            continue;
+        }
         println!("   ✅ Exit action completed for mint {}", mint);
     }
 

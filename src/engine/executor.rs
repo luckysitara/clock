@@ -18,6 +18,7 @@ use crate::{
         jito::JitoClient,
         position_manager::{Position, PositionManager},
         tip_engine::TipEngine,
+        wallet::fetch_token_balance,
     },
 };
 
@@ -164,36 +165,6 @@ impl ExecutionEngine {
         });
     }
 
-    /// Fetch a wallet's token balance for a mint (0 if the account doesn't exist)
-    async fn fetch_token_balance(&self, owner: &Pubkey, mint: &Pubkey, token_program: &Pubkey) -> Option<u64> {
-        let (ata, _) = crate::constants::derive_associated_user_token(owner, mint, token_program);
-        let payload = serde_json::json!({
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "getTokenAccountBalance",
-            "params": [ata.to_string(), {"commitment": "processed"}]
-        });
-        let json = self
-            .http_client
-            .post(&self.rpc_url)
-            .json(&payload)
-            .send()
-            .await
-            .ok()?
-            .json::<serde_json::Value>()
-            .await
-            .ok()?;
-        if json.get("error").is_some() {
-            return Some(0);
-        }
-        json.get("result")?
-            .get("value")?
-            .get("amount")?
-            .as_str()?
-            .parse()
-            .ok()
-    }
-
     pub async fn execute_action(&self, action: TradeAction) -> Result<()> {
         match action {
             TradeAction::Buy {
@@ -307,15 +278,28 @@ impl ExecutionEngine {
             return Ok(false);
         }
 
-        info!("🎉 TRADE CONFIRMED ON-CHAIN! Tx: https://solscan.io/tx/{} | Mint: {} | Tokens: {} | Sol Spent: {:.4} SOL", sig, mint, calc.tokens_out, sol_amount_lamports as f64 / 1e9);
+        // calc.tokens_out is the slippage-adjusted minimum. Use what actually arrived, so the
+        // sell size is right and the entry price (which anchors every stop) isn't inflated by slippage
+        let (token_balance, entry_price_sol) =
+            match fetch_token_balance(&self.http_client, &self.rpc_url, &payer_pubkey, &mint, &token_prog).await {
+                Some(received) if received > 0 => {
+                    (received, (sol_amount_lamports as f64 / 1e9) / (received as f64 / 1e6))
+                }
+                _ => {
+                    warn!("Could not read received token balance for {}; using slippage-adjusted estimate", mint);
+                    (calc.tokens_out, calc.effective_price_sol)
+                }
+            };
+
+        info!("🎉 TRADE CONFIRMED ON-CHAIN! Tx: https://solscan.io/tx/{} | Mint: {} | Tokens: {} | Entry: {:.10} SOL | Sol Spent: {:.4} SOL", sig, mint, token_balance, entry_price_sol, sol_amount_lamports as f64 / 1e9);
         let dev = (creator != Pubkey::default()).then_some(creator);
         self.position_manager
             .add_position(Position {
                 mint,
                 bonding_curve: crate::constants::derive_bonding_curve(&mint).0,
-                entry_price_sol: calc.effective_price_sol,
-                highest_price_sol: calc.effective_price_sol,
-                token_balance: calc.tokens_out,
+                entry_price_sol,
+                highest_price_sol: entry_price_sol,
+                token_balance,
                 sol_invested_lamports: sol_amount_lamports,
                 dev_wallet: dev,
                 dev_initial_balance,
@@ -327,7 +311,7 @@ impl ExecutionEngine {
         // Copy-trades don't know the dev's bag yet; look it up so dump detection has a threshold
         if dev_initial_balance == 0 {
             if let Some(dev) = dev {
-                match self.fetch_token_balance(&dev, &mint, &token_prog).await {
+                match fetch_token_balance(&self.http_client, &self.rpc_url, &dev, &mint, &token_prog).await {
                     Some(balance) if balance > 0 => {
                         info!("👀 Dev {} holds {} tokens of {} at entry", dev, balance, mint);
                         self.position_manager.set_dev_initial_balance(&mint, balance).await;

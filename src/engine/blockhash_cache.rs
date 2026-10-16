@@ -33,6 +33,18 @@ impl BlockhashCache {
         self.entry.read().await.hash
     }
 
+    /// Wait until the first blockhash has been fetched (false on timeout)
+    pub async fn wait_until_ready(&self, timeout: Duration) -> bool {
+        let deadline = tokio::time::Instant::now() + timeout;
+        while tokio::time::Instant::now() < deadline {
+            if self.entry.read().await.hash != Hash::default() {
+                return true;
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+        false
+    }
+
     /// Spawn a dedicated background task to continuously refresh the blockhash
     pub fn spawn_updater(&self, rpc_url: String, interval: Duration) -> tokio::task::JoinHandle<()> {
         let entry_clone = Arc::clone(&self.entry);

@@ -1,4 +1,3 @@
-use base64::Engine;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use solana_sdk::pubkey::Pubkey;
@@ -7,6 +6,8 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+
+use crate::engine::wallet::{fetch_bonding_curve, fetch_token_holdings};
 
 #[derive(Debug, Clone)]
 pub struct Position {
@@ -42,13 +43,28 @@ pub enum Reservation {
 
 /// Entry data persisted to disk so restarts keep the real entry price and stops
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct PersistedPosition {
-    mint: String,
-    entry_price_sol: f64,
-    highest_price_sol: f64,
-    sol_invested_lamports: u64,
-    dev_wallet: Option<String>,
-    dev_initial_balance: u64,
+pub struct SavedPosition {
+    pub mint: String,
+    pub entry_price_sol: f64,
+    pub highest_price_sol: f64,
+    pub sol_invested_lamports: u64,
+    pub dev_wallet: Option<String>,
+    pub dev_initial_balance: u64,
+}
+
+/// Read a positions state file (empty if missing or unreadable)
+pub fn load_saved_positions(path: &std::path::Path) -> HashMap<Pubkey, SavedPosition> {
+    let Ok(bytes) = std::fs::read(path) else { return HashMap::new() };
+    match serde_json::from_slice::<Vec<SavedPosition>>(&bytes) {
+        Ok(records) => records
+            .into_iter()
+            .filter_map(|r| Pubkey::from_str(&r.mint).ok().map(|m| (m, r)))
+            .collect(),
+        Err(e) => {
+            warn!("⚠️ Could not parse {}: {}", path.display(), e);
+            HashMap::new()
+        }
+    }
 }
 
 #[derive(Default)]
@@ -249,6 +265,11 @@ impl PositionManager {
         }
     }
 
+    /// Mint of the open position on this bonding curve, if any
+    pub async fn mint_for_curve(&self, bonding_curve: &Pubkey) -> Option<Pubkey> {
+        self.state.read().await.curve_to_mint.get(bonding_curve).copied()
+    }
+
     /// Get position copy
     pub async fn get_position(&self, mint: &Pubkey) -> Option<Position> {
         self.state.read().await.positions.get(mint).cloned()
@@ -272,10 +293,10 @@ impl PositionManager {
 
     fn persist(&self, state: &State) {
         let Some(path) = &self.state_path else { return };
-        let records: Vec<PersistedPosition> = state
+        let records: Vec<SavedPosition> = state
             .positions
             .values()
-            .map(|p| PersistedPosition {
+            .map(|p| SavedPosition {
                 mint: p.mint.to_string(),
                 entry_price_sol: p.entry_price_sol,
                 highest_price_sol: p.highest_price_sol,
@@ -300,21 +321,6 @@ impl PositionManager {
         }
     }
 
-    fn load_persisted(&self) -> HashMap<Pubkey, PersistedPosition> {
-        let Some(path) = &self.state_path else { return HashMap::new() };
-        let Ok(bytes) = std::fs::read(path) else { return HashMap::new() };
-        match serde_json::from_slice::<Vec<PersistedPosition>>(&bytes) {
-            Ok(records) => records
-                .into_iter()
-                .filter_map(|r| Pubkey::from_str(&r.mint).ok().map(|m| (m, r)))
-                .collect(),
-            Err(e) => {
-                warn!("⚠️ Could not parse {}: {}", path.display(), e);
-                HashMap::new()
-            }
-        }
-    }
-
     /// Recover open token positions from on-chain wallet token accounts on startup
     pub async fn recover_open_positions(
         &self,
@@ -322,118 +328,96 @@ impl PositionManager {
         wallet: &Pubkey,
         curve_cache: &Arc<RwLock<HashMap<Pubkey, crate::decoders::BondingCurveAccountPod>>>,
     ) {
-        let persisted = self.load_persisted();
+        let saved = self
+            .state_path
+            .as_deref()
+            .map(load_saved_positions)
+            .unwrap_or_default();
         let client = reqwest::Client::new();
-        for prog in [
-            crate::constants::spl_token_program_id(),
-            crate::constants::spl_token_2022_program_id(),
-        ] {
-            let payload = serde_json::json!({
-                "jsonrpc": "2.0",
-                "id": 1,
-                "method": "getTokenAccountsByOwner",
-                "params": [
-                    wallet.to_string(),
-                    {"programId": prog.to_string()},
-                    {"encoding": "jsonParsed"}
-                ]
-            });
 
-            let Ok(resp) = client.post(rpc_url).json(&payload).send().await else { continue };
-            let Ok(json) = resp.json::<serde_json::Value>().await else { continue };
-            let Some(accounts) = json.get("result").and_then(|r| r.get("value")).and_then(|v| v.as_array()) else { continue };
-
-            for acc in accounts {
-                let Some(info) = acc.get("account").and_then(|a| a.get("data")).and_then(|d| d.get("parsed")).and_then(|p| p.get("info")) else { continue };
-                let mint_str = info.get("mint").and_then(|m| m.as_str()).unwrap_or_default();
-                let amount_str = info.get("tokenAmount").and_then(|t| t.get("amount")).and_then(|a| a.as_str()).unwrap_or("0");
-                let token_amount: u64 = amount_str.parse().unwrap_or(0);
-                if token_amount == 0 {
-                    continue;
-                }
-                let Ok(mint) = Pubkey::from_str(mint_str) else { continue };
-
-                let (bonding_curve, _) = crate::constants::derive_bonding_curve(&mint);
-                let curve_payload = serde_json::json!({
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                    "method": "getAccountInfo",
-                    "params": [
-                        bonding_curve.to_string(),
-                        {"encoding": "base64"}
-                    ]
-                });
-                let Ok(c_resp) = client.post(rpc_url).json(&curve_payload).send().await else { continue };
-                let Ok(c_json) = c_resp.json::<serde_json::Value>().await else { continue };
-                let Some(b64) = c_json
-                    .get("result").and_then(|r| r.get("value")).and_then(|v| v.get("data"))
-                    .and_then(|d| d.as_array()).and_then(|d| d.first()).and_then(|d| d.as_str())
-                else { continue };
-                let Ok(bytes) = base64::engine::general_purpose::STANDARD.decode(b64) else { continue };
-                let Some(pod) = crate::decoders::BondingCurveAccountPod::read_from_account(&bytes) else { continue };
-
-                if pod.complete {
-                    warn!(
-                        "🎓 Skipping recovery of {}: bonding curve has graduated, sell it on PumpSwap/Raydium manually",
-                        mint
-                    );
-                    continue;
-                }
-
-                let spot_price = pod.current_spot_price_sol();
-                let position = match persisted.get(&mint) {
-                    Some(rec) => {
-                        info!(
-                            "🔄 Restored position for mint {} from state file: {} tokens, entry {:.10} SOL (current {:.10} SOL)",
-                            mint, token_amount, rec.entry_price_sol, spot_price
-                        );
-                        Position {
-                            mint,
-                            bonding_curve,
-                            entry_price_sol: rec.entry_price_sol,
-                            highest_price_sol: rec.highest_price_sol.max(spot_price),
-                            token_balance: token_amount,
-                            sol_invested_lamports: rec.sol_invested_lamports,
-                            dev_wallet: rec
-                                .dev_wallet
-                                .as_deref()
-                                .and_then(|d| Pubkey::from_str(d).ok())
-                                .or(Some(pod.creator)),
-                            dev_initial_balance: rec.dev_initial_balance,
-                            token_program: prog,
-                            is_selling: false,
-                        }
-                    }
-                    None => {
-                        // No record of the real entry: use current price and current value of the bag
-                        let current_value = pod
-                            .calculate_sell_output(token_amount, 0)
-                            .map(|c| c.sol_out)
-                            .unwrap_or(0);
-                        warn!(
-                            "🔄 Restored untracked position for mint {}: {} tokens (no entry record; using current price {:.10} SOL and value {:.4} SOL as entry)",
-                            mint, token_amount, spot_price, current_value as f64 / 1e9
-                        );
-                        Position {
-                            mint,
-                            bonding_curve,
-                            entry_price_sol: spot_price,
-                            highest_price_sol: spot_price,
-                            token_balance: token_amount,
-                            sol_invested_lamports: current_value,
-                            dev_wallet: Some(pod.creator),
-                            dev_initial_balance: 0,
-                            token_program: prog,
-                            is_selling: false,
-                        }
-                    }
-                };
-
-                curve_cache.write().await.insert(bonding_curve, pod);
-                let mut state = self.state.write().await;
-                state.curve_to_mint.insert(bonding_curve, mint);
-                state.positions.insert(mint, position);
+        let holdings = match fetch_token_holdings(&client, rpc_url, wallet).await {
+            Ok(h) => h,
+            Err(e) => {
+                // Don't rewrite the state file from an incomplete view of the wallet
+                warn!("⚠️ Position recovery failed, starting with no open positions: {:#}", e);
+                return;
             }
+        };
+
+        for holding in holdings {
+            let mint = holding.mint;
+            let pod = match fetch_bonding_curve(&client, rpc_url, &mint).await {
+                Ok(Some(pod)) => pod,
+                // Not a Pump.fun token (or RPC hiccup): not ours to manage
+                Ok(None) => continue,
+                Err(e) => {
+                    warn!("⚠️ Could not fetch bonding curve for {}: {:#}", mint, e);
+                    continue;
+                }
+            };
+
+            if pod.complete {
+                warn!(
+                    "🎓 Skipping recovery of {}: bonding curve has graduated, sell it on PumpSwap/Raydium manually",
+                    mint
+                );
+                continue;
+            }
+
+            let bonding_curve = crate::constants::derive_bonding_curve(&mint).0;
+            let spot_price = pod.current_spot_price_sol();
+            let position = match saved.get(&mint) {
+                Some(rec) => {
+                    info!(
+                        "🔄 Restored position for mint {} from state file: {} tokens, entry {:.10} SOL (current {:.10} SOL)",
+                        mint, holding.amount, rec.entry_price_sol, spot_price
+                    );
+                    Position {
+                        mint,
+                        bonding_curve,
+                        entry_price_sol: rec.entry_price_sol,
+                        highest_price_sol: rec.highest_price_sol.max(spot_price),
+                        token_balance: holding.amount,
+                        sol_invested_lamports: rec.sol_invested_lamports,
+                        dev_wallet: rec
+                            .dev_wallet
+                            .as_deref()
+                            .and_then(|d| Pubkey::from_str(d).ok())
+                            .or(Some(pod.creator)),
+                        dev_initial_balance: rec.dev_initial_balance,
+                        token_program: holding.token_program,
+                        is_selling: false,
+                    }
+                }
+                None => {
+                    // No record of the real entry: use current price and current value of the bag
+                    let current_value = pod
+                        .calculate_sell_output(holding.amount, 0)
+                        .map(|c| c.sol_out)
+                        .unwrap_or(0);
+                    warn!(
+                        "🔄 Restored untracked position for mint {}: {} tokens (no entry record; using current price {:.10} SOL and value {:.4} SOL as entry)",
+                        mint, holding.amount, spot_price, current_value as f64 / 1e9
+                    );
+                    Position {
+                        mint,
+                        bonding_curve,
+                        entry_price_sol: spot_price,
+                        highest_price_sol: spot_price,
+                        token_balance: holding.amount,
+                        sol_invested_lamports: current_value,
+                        dev_wallet: Some(pod.creator),
+                        dev_initial_balance: 0,
+                        token_program: holding.token_program,
+                        is_selling: false,
+                    }
+                }
+            };
+
+            curve_cache.write().await.insert(bonding_curve, pod);
+            let mut state = self.state.write().await;
+            state.curve_to_mint.insert(bonding_curve, mint);
+            state.positions.insert(mint, position);
         }
 
         // Rewrite the state file so positions closed while offline are dropped

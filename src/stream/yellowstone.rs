@@ -227,12 +227,13 @@ impl YellowstoneStreamer {
                                     }
                                 };
 
-                                // Check active position exits
-                                if let Some((pos, reason)) = self
-                                    .position_manager
-                                    .on_price_update(&pubkey, current_price)
-                                    .await
-                                {
+                                // Check active position exits (a graduated curve can't be sold into)
+                                let exit = if curve_pod.complete {
+                                    None
+                                } else {
+                                    self.position_manager.on_price_update(&pubkey, current_price).await
+                                };
+                                if let Some((pos, reason)) = exit {
                                     let is_panic = reason == ExitReason::DevDumpPanic || reason == ExitReason::HardStopLoss || reason == ExitReason::TrailingStop;
                                     let _ = self
                                         .trade_sender
@@ -252,6 +253,12 @@ impl YellowstoneStreamer {
                                         "🎓 GRADUATION DETECTED: Curve {} reached 100%! Ready for PumpSwap migration.",
                                         pubkey
                                     );
+                                    if let Some(mint) = self.position_manager.mint_for_curve(&pubkey).await {
+                                        warn!(
+                                            "🎓 HELD TOKEN GRADUATED: {} can no longer be sold on the bonding curve; sell it on PumpSwap/Raydium manually",
+                                            mint
+                                        );
+                                    }
                                 }
                             }
                         }
@@ -359,10 +366,31 @@ impl YellowstoneStreamer {
                             };
                             let Some(buy_pod) = PumpFunBuyPod::read_from_raw(data) else { continue };
 
-                            let whale_sol_spent = buy_pod.max_sol_cost as f64 / 1e9;
+                            // Mint is account index #2 in Buy instruction
+                            let Some(&mint_idx) = ix.accounts.get(2) else { continue };
+                            let Some(mint_bytes) = account_keys.get(mint_idx as usize) else { continue };
+                            let mint = Pubkey::new_from_array(*mint_bytes);
+
+                            // max_sol_cost includes the whale's slippage allowance; price the actual
+                            // token amount on the cached curve when we have it
+                            let estimated_cost = {
+                                let (bonding_curve, _) = crate::constants::derive_bonding_curve(&mint);
+                                let cache = self.curve_cache.read().await;
+                                cache
+                                    .get(&bonding_curve)
+                                    .or_else(|| cache.get(&mint))
+                                    .and_then(|c| {
+                                        let mut curve = *c;
+                                        curve.apply_buy(buy_pod.amount)
+                                    })
+                            };
+                            let whale_sol_spent = estimated_cost
+                                .unwrap_or(buy_pod.max_sol_cost)
+                                .min(buy_pod.max_sol_cost) as f64
+                                / 1e9;
                             info!(
-                                "🚨 WHALE DETECTED [{}]: Bought on Pump.fun with up to {} SOL",
-                                whale, whale_sol_spent
+                                "🚨 WHALE DETECTED [{}]: Bought {} on Pump.fun for ~{:.4} SOL (max {:.4} SOL)",
+                                whale, mint, whale_sol_spent, buy_pod.max_sol_cost as f64 / 1e9
                             );
 
                             if whale_sol_spent < self.config.min_whale_buy_sol {
@@ -372,11 +400,6 @@ impl YellowstoneStreamer {
                                 );
                                 continue;
                             }
-
-                            // Mint is account index #2 in Buy instruction
-                            let Some(&mint_idx) = ix.accounts.get(2) else { continue };
-                            let Some(mint_bytes) = account_keys.get(mint_idx as usize) else { continue };
-                            let mint = Pubkey::new_from_array(*mint_bytes);
 
                             if !processed_mints.insert(mint) {
                                 continue;
@@ -587,6 +610,13 @@ impl YellowstoneStreamer {
                                             info!(
                                                 "🛡️ Skipping launch [{}] {}: whale buy {:.4} SOL < {:.2} SOL floor (dev buy {:.4} SOL)",
                                                 view.symbol, mint, whale_bought_sol, self.config.min_whale_buy_sol, dev_bought_sol
+                                            );
+                                            continue;
+                                        }
+                                        if dev_bought_sol < self.config.min_creator_buy_sol {
+                                            info!(
+                                                "🛡️ Skipping launch [{}] {}: dev buy {:.4} SOL < {:.2} SOL floor",
+                                                view.symbol, mint, dev_bought_sol, self.config.min_creator_buy_sol
                                             );
                                             continue;
                                         }

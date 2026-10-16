@@ -119,7 +119,8 @@ cargo run --release
 | `HARD_STOP_LOSS_PCT` | Hard stop-loss below entry | `0.20` (20%) |
 | `TAKE_PROFIT_PCT` | Take-profit price multiple | `2.5` (2.5x) |
 | `DEV_DUMP_THRESHOLD_PCT` | Share of the dev's entry balance sold that triggers a panic exit | `0.20` (20%) |
-| `MIN_WHALE_BUY_SOL` | Minimum SOL a target whale must spend (copy-trade, or its own buy inside a launch tx) | `0.60` |
+| `MIN_WHALE_BUY_SOL` | Minimum SOL a target whale must spend (copy-trade, or its own buy inside a launch tx) | `1.0` |
+| `MIN_CREATOR_BUY_SOL` | Minimum dev buy in the create tx before a launch is sniped | `0.20` |
 | `DUAL_ROUTE_RPC` | Also send transactions via public RPC (`false` = Jito bundles only) | `true` |
 | `POSITIONS_FILE` | Where open-position entry data is persisted | `data/positions.json` |
 | `MAX_CURVE_CACHE_ENTRIES` | Bonding curves kept in memory before the cache is cleared | `50000` |

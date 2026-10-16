@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use log::{error, info};
 use solana_sdk::signer::Signer;
 use std::collections::HashMap;
@@ -59,7 +59,7 @@ async fn main() -> Result<()> {
             take_profit_pct: 2.5,
             dev_dump_threshold_pct: 0.20,
             min_creator_buy_sol: 0.20,
-            min_whale_buy_sol: 0.60,
+            min_whale_buy_sol: 1.0,
             target_wallets: vec![],
             dual_route_rpc: true,
             positions_file: "data/positions.json".to_string(),
@@ -68,19 +68,11 @@ async fn main() -> Result<()> {
     }));
 
     // 2. Load Keypair
-    let keypair = match config.load_keypair() {
-        Ok(kp) => {
-            info!("🔑 Trader Keypair loaded successfully: {}", kp.pubkey());
-            kp
-        }
-        Err(e) => {
-            error!(
-                "⚠️ Could not load keypair at '{}': {}. Generating temporary keypair for dry-run.",
-                config.keypair_path, e
-            );
-            Arc::new(solana_sdk::signature::Keypair::new())
-        }
-    };
+    // No silent fallback: a throwaway keypair would still send real (failing) transactions
+    let keypair = config
+        .load_keypair()
+        .with_context(|| format!("Could not load trader keypair at '{}'", config.keypair_path))?;
+    info!("🔑 Trader Keypair loaded successfully: {}", keypair.pubkey());
 
     info!("⚙️ Network Configuration:");
     info!("   Solana RPC:          {}", config.solana_rpc_url);
@@ -107,6 +99,9 @@ async fn main() -> Result<()> {
     // 3. Initialize Blockhash Cache Background Task
     let blockhash_cache = Arc::new(BlockhashCache::new());
     blockhash_cache.spawn_updater(config.solana_rpc_url.clone(), Duration::from_millis(1500));
+    if !blockhash_cache.wait_until_ready(Duration::from_secs(15)).await {
+        anyhow::bail!("No blockhash from {} after 15s; check SOLANA_RPC_URL", config.solana_rpc_url);
+    }
 
     // 4. Initialize Core Components
     let tip_engine = Arc::new(TipEngine::new(

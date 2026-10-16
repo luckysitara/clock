@@ -1,14 +1,14 @@
 use anyhow::{Context, Result};
-use base64::Engine;
-use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signer::Signer;
-use std::str::FromStr;
+use std::path::Path;
 use std::sync::Arc;
 
 use clockit::{
     config::BotConfig,
-    constants::derive_bonding_curve,
-    decoders::BondingCurveAccountPod,
+    engine::{
+        position_manager::load_saved_positions,
+        wallet::{fetch_bonding_curve, fetch_token_holdings},
+    },
 };
 
 #[tokio::main]
@@ -23,74 +23,63 @@ async fn main() -> Result<()> {
 
     let http_client = reqwest::Client::new();
     let rpc_url = config.solana_rpc_url.clone();
+    let saved = load_saved_positions(Path::new(&config.positions_file));
 
-    // Query token accounts
-    let payload = serde_json::json!({
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "getTokenAccountsByOwner",
-        "params": [
-            wallet_pubkey.to_string(),
-            { "programId": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
-            { "encoding": "jsonParsed" }
-        ]
-    });
+    let holdings = fetch_token_holdings(&http_client, &rpc_url, &wallet_pubkey)
+        .await
+        .context("Failed to get token accounts")?;
 
-    let resp = http_client.post(&rpc_url).json(&payload).send().await?.json::<serde_json::Value>().await?;
-    let accounts = resp["result"]["value"].as_array().cloned().unwrap_or_default();
-
-    let mut open_positions = Vec::new();
-    for acc in accounts {
-        let info = &acc["account"]["data"]["parsed"]["info"];
-        let mint_str = info["mint"].as_str().unwrap_or_default();
-        let amount_str = info["tokenAmount"]["amount"].as_str().unwrap_or("0");
-        let ui_amount = info["tokenAmount"]["uiAmount"].as_f64().unwrap_or(0.0);
-        let amount: u64 = amount_str.parse().unwrap_or(0);
-
-        if amount > 0 {
-            let mint = Pubkey::from_str(mint_str)?;
-            open_positions.push((mint, amount, ui_amount));
-        }
-    }
-
-    if open_positions.is_empty() {
+    if holdings.is_empty() {
         println!("No open token positions found in wallet.");
-        return Ok(());
+    } else {
+        println!("\nFound {} token balance(s):", holdings.len());
     }
 
-    println!("\nFound {} open position(s):", open_positions.len());
-    for (mint, amount, ui_amount) in open_positions {
-        let (curve_pda, _) = derive_bonding_curve(&mint);
+    for holding in holdings {
+        let mint = holding.mint;
+        let ui_amount = holding.amount as f64 / 1e6;
 
-        let pda_payload = serde_json::json!({
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "getAccountInfo",
-            "params": [
-                curve_pda.to_string(),
-                { "encoding": "base64" }
-            ]
-        });
+        let curve_pod = match fetch_bonding_curve(&http_client, &rpc_url, &mint).await {
+            Ok(Some(pod)) => pod,
+            Ok(None) => {
+                println!("------------------------------------------------------------");
+                println!("ℹ️  {} ({:.2} tokens): not a Pump.fun bonding curve token", mint, ui_amount);
+                continue;
+            }
+            Err(e) => {
+                println!("⚠️ Failed to fetch curve data for mint {}: {:#}", mint, e);
+                continue;
+            }
+        };
 
-        let pda_resp = http_client.post(&rpc_url).json(&pda_payload).send().await?.json::<serde_json::Value>().await?;
-        let data_b64 = pda_resp["result"]["value"]["data"][0].as_str().unwrap_or_default();
-        let curve_data = base64::engine::general_purpose::STANDARD.decode(data_b64)?;
+        let spot_price = curve_pod.current_spot_price_sol();
+        let real_sol = curve_pod.real_sol_reserves as f64 / 1e9;
+        // What selling the whole bag into the curve would return right now
+        let current_value_sol = curve_pod
+            .calculate_sell_output(holding.amount, 0)
+            .map(|c| c.sol_out as f64 / 1e9)
+            .unwrap_or(0.0);
 
-        if let Some(curve_pod) = BondingCurveAccountPod::read_from_account(&curve_data) {
-            let spot_price = curve_pod.current_spot_price_sol();
-            let real_sol = curve_pod.real_sol_reserves as f64 / 1e9;
-            let current_value_sol = ui_amount * spot_price;
-            let pnl_pct = ((current_value_sol - 0.20) / 0.20) * 100.0;
-
-            println!("------------------------------------------------------------");
-            println!("🚀 Position Mint: {}", mint);
-            println!("   Tokens Held:   {:.2} (raw: {})", ui_amount, amount);
-            println!("   Curve Spot:    {:.10} SOL", spot_price);
-            println!("   Real SOL Res:  {:.4} SOL", real_sol);
-            println!("   Estimated Val: {:.4} SOL (Entry: 0.2000 SOL | P&L: {:+.2}%)", current_value_sol, pnl_pct);
-            println!("   Curve Prog:    {:.2}% complete", (real_sol / 85.0) * 100.0);
+        println!("------------------------------------------------------------");
+        println!("🚀 Position Mint: {}", mint);
+        println!("   Tokens Held:   {:.2} (raw: {}) | Token Prog: {}", ui_amount, holding.amount, holding.token_program);
+        println!("   Curve Spot:    {:.10} SOL", spot_price);
+        println!("   Real SOL Res:  {:.4} SOL", real_sol);
+        match saved.get(&mint) {
+            Some(rec) => {
+                let invested = rec.sol_invested_lamports as f64 / 1e9;
+                let pnl_pct = if invested > 0.0 { (current_value_sol - invested) / invested * 100.0 } else { 0.0 };
+                println!(
+                    "   Sell Value:    {:.4} SOL (Entry: {:.4} SOL @ {:.10} | P&L: {:+.2}%)",
+                    current_value_sol, invested, rec.entry_price_sol, pnl_pct
+                );
+            }
+            None => println!("   Sell Value:    {:.4} SOL (no entry record in {})", current_value_sol, config.positions_file),
+        }
+        if curve_pod.complete {
+            println!("   Curve Prog:    🎓 graduated (sell on PumpSwap/Raydium)");
         } else {
-            println!("⚠️ Failed to parse curve data for mint: {}", mint);
+            println!("   Curve Prog:    {:.2}% complete", curve_pod.graduation_progress_pct());
         }
     }
 

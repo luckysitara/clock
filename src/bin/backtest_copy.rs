@@ -13,7 +13,7 @@
 //! Usage:
 //!   backtest_copy [--days 7] [--latency-slots 2] [--hold-hours 6] [--parallel 8]
 //!                 [--wallets a,b,...] [--max-wallet-txs 5000] [--max-mint-txs 4000]
-//!                 [--sweep] [--offline]
+//!                 [--max-tokens-per-wallet N] [--sweep] [--offline]
 
 use anyhow::Result;
 use futures::stream::{self, StreamExt};
@@ -39,6 +39,8 @@ use clockit::{
 };
 
 const CACHE_DIR: &str = "data/backtest";
+/// getTransaction calls per JSON-RPC batch request
+const BATCH: usize = 50;
 /// Anchor self-CPI event tag, then sha256("event:TradeEvent")[..8]
 const EVENT_IX_TAG: [u8; 8] = [0xe4, 0x45, 0xa5, 0x2e, 0x51, 0xcb, 0x9a, 0x1d];
 const TRADE_EVENT_DISC: [u8; 8] = [0xbd, 0xdb, 0x7f, 0xd3, 0x4e, 0xe6, 0x61, 0xee];
@@ -237,21 +239,57 @@ impl Fetcher {
         (out, false)
     }
 
+    /// getTransaction for each signature in one batched request, retried on transport errors
+    async fn fetch_batch(&self, sigs: &[&String]) -> Vec<(String, Option<Vec<Trade>>)> {
+        let body: Vec<Value> = sigs.iter().enumerate()
+            .map(|(i, sig)| json!({"jsonrpc": "2.0", "id": i, "method": "getTransaction",
+                "params": [sig, {"encoding": "json", "maxSupportedTransactionVersion": 1}]}))
+            .collect();
+        let mut last_err = String::new();
+        for attempt in 0..5u64 {
+            let resp = match self.client.post(&self.url).json(&body).send().await {
+                Ok(r) if r.status().as_u16() == 429 => {
+                    last_err = "HTTP 429".into();
+                    tokio::time::sleep(std::time::Duration::from_millis(500 * (attempt + 1))).await;
+                    continue;
+                }
+                Ok(r) => r.json::<Vec<Value>>().await,
+                Err(e) => {
+                    last_err = format!("{e}");
+                    tokio::time::sleep(std::time::Duration::from_millis(500 * (attempt + 1))).await;
+                    continue;
+                }
+            };
+            let Ok(replies) = resp else {
+                last_err = "invalid batch reply".into();
+                continue;
+            };
+            let mut by_id: HashMap<u64, Value> = replies.into_iter().filter_map(|r| Some((r["id"].as_u64()?, r))).collect();
+            return sigs.iter().enumerate().map(|(i, sig)| {
+                let reply = by_id.remove(&(i as u64)).unwrap_or_default();
+                let trades = match (&reply["result"], &reply["error"]) {
+                    (tx, _) if tx.is_object() => Some(parse_trades(tx)),
+                    (_, err) if !err.is_null() => self.note_failure(&format!("getTransaction error: {err}")),
+                    _ => self.note_failure("transaction not found"),
+                };
+                (sig.to_string(), trades)
+            }).collect();
+        }
+        sigs.iter().map(|sig| (sig.to_string(), self.note_failure(&last_err))).collect()
+    }
+
     /// Fill `cache` with the trades of every signature it doesn't have yet
     async fn fetch_txs(&self, sigs: &[String], cache: &mut TxCache, concurrency: usize) {
         let missing: Vec<&String> = sigs.iter().filter(|s| !cache.txs.contains_key(*s)).collect();
-        let results: Vec<(String, Option<Vec<Trade>>)> = stream::iter(missing)
-            .map(|sig| async move {
-                let params = json!([sig, {"encoding": "json", "maxSupportedTransactionVersion": 1}]);
-                match rpc(&self.client, &self.url, "getTransaction", params).await {
-                    Ok(tx) if !tx.is_null() => (sig.clone(), Some(parse_trades(&tx))),
-                    Ok(_) => (sig.clone(), self.note_failure("transaction not found")),
-                    Err(e) => (sig.clone(), self.note_failure(&format!("{e:#}"))),
-                }
-            })
-            .buffer_unordered(concurrency.max(1))
-            .collect()
-            .await;
+        // JSON-RPC batches: one HTTP request carries BATCH getTransaction calls (~3x the throughput)
+        let results: Vec<(String, Option<Vec<Trade>>)> = stream::iter(missing.chunks(BATCH))
+            .map(|chunk| self.fetch_batch(chunk))
+            .buffer_unordered(concurrency.div_ceil(4).max(1))
+            .collect::<Vec<_>>()
+            .await
+            .into_iter()
+            .flatten()
+            .collect();
         for (sig, trades) in results {
             match trades {
                 Some(t) => {
@@ -332,7 +370,7 @@ async fn mint_history(f: &Fetcher, mint: &str, from_ts: i64, to_ts: i64, max_txs
             wanted.push(sig.clone());
         }
     }
-    f.fetch_txs(&wanted, &mut cache.txs, 2).await;
+    f.fetch_txs(&wanted, &mut cache.txs, f.parallel).await;
     if let Some(sig) = &cache.creation_sig {
         if let Some(trades) = cache.txs.txs.get(sig) {
             cache.dev_initial = trades.iter().filter(|t| t.mint == mint && t.is_buy && t.user == t.creator).map(|t| t.tokens).sum();
@@ -446,6 +484,8 @@ async fn simulate(hist: &[MintHistory], timeline: &[(u64, usize, usize)], s: &Se
     let mut state: Vec<Option<BondingCurveAccountPod>> = vec![None; hist.len()];
     let mut dev_balance: Vec<u64> = hist.iter().map(|h| h.dev_initial).collect();
     let mut last_ts: Vec<i64> = vec![0; hist.len()];
+    // Tokens whose fetched tape has ended (nothing to price a new position with)
+    let mut finished: Vec<bool> = vec![false; hist.len()];
     let mut open: HashMap<usize, Open> = HashMap::new();
     let mut pending: Vec<Pending> = Vec::new();
     let mut r = SimResult::default();
@@ -456,6 +496,10 @@ async fn simulate(hist: &[MintHistory], timeline: &[(u64, usize, usize)], s: &Se
             let (due, rest): (Vec<Pending>, Vec<Pending>) = pending.into_iter().partition(|o| o.fill_slot <= slot);
             pending = rest;
             for o in due {
+                if finished[o.mint] && matches!(o.order, Order::Buy { .. }) {
+                    pm.release(&mints[o.mint]).await;
+                    continue;
+                }
                 fill(o, &mut r, &pm, &mut open, &state, &dev_balance, &last_ts, &mints, &curves, s, tips).await;
             }
         }
@@ -496,6 +540,13 @@ async fn simulate(hist: &[MintHistory], timeline: &[(u64, usize, usize)], s: &Se
             if let Some((reason, panic)) = exit {
                 pending.push(Pending { fill_slot: slot + p.latency_slots, mint: mi, order: Order::Sell { reason, panic } });
             }
+        }
+
+        // The fetched tape for this token ends here; value what we hold instead of letting it
+        // sit "open" (and block capital) for the rest of the replay
+        finished[mi] = ti + 1 == hist[mi].trades.len();
+        if finished[mi] && open.contains_key(&mi) {
+            close(mi, "Window end (marked)".into(), false, &mut r, &pm, &mut open, &state, &last_ts, &mints, s, tips).await;
         }
 
         // 4. A copied wallet buying is a signal
@@ -662,6 +713,7 @@ async fn main() -> Result<()> {
     let parallel: usize = arg(&args, "--parallel", 8);
     let max_wallet_txs: usize = arg(&args, "--max-wallet-txs", 5000);
     let max_mint_txs: usize = arg(&args, "--max-mint-txs", 4000);
+    let max_tokens_per_wallet: usize = arg(&args, "--max-tokens-per-wallet", usize::MAX);
     let latency: u64 = arg(&args, "--latency-slots", 2);
     let offline = args.iter().any(|a| a == "--offline");
     let wallets: Vec<String> = match args.iter().position(|a| a == "--wallets").and_then(|i| args.get(i + 1)) {
@@ -685,20 +737,36 @@ async fn main() -> Result<()> {
 
     // Phase 1: what the copied wallets bought
     println!("📥 Phase 1: copied wallets' trades...");
-    let mut buys_by_mint: HashMap<String, (i64, i64)> = HashMap::new();
+    let min_whale_lamports = (config.min_whale_buy_sol * 1e9) as u64;
+    let mut all_buys: HashMap<String, (i64, i64)> = HashMap::new();
+    let mut sampled: HashSet<String> = HashSet::new();
     for (i, w) in wallets.iter().enumerate() {
         let (trades, covered_from) = wallet_trades(&f, w, since, max_wallet_txs, offline).await;
         let buys: Vec<&Trade> = trades.iter().filter(|t| t.is_buy).collect();
         for b in &buys {
-            let e = buys_by_mint.entry(b.mint.clone()).or_insert((b.ts, b.ts));
+            let e = all_buys.entry(b.mint.clone()).or_insert((b.ts, b.ts));
             e.0 = e.0.min(b.ts);
             e.1 = e.1.max(b.ts);
         }
+        // Busy wallets buy thousands of tokens; a fixed pseudo-random sample of them keeps the
+        // run short without favouring any kind of token (same sample on every rerun)
+        let mut copyable: Vec<&str> = buys.iter().filter(|b| b.sol >= min_whale_lamports).map(|b| b.mint.as_str()).collect();
+        copyable.sort_by_key(|m| {
+            use std::hash::{Hash, Hasher};
+            let mut h = std::collections::hash_map::DefaultHasher::new();
+            (m, w.as_str()).hash(&mut h);
+            h.finish()
+        });
+        copyable.dedup();
+        let take = copyable.len().min(max_tokens_per_wallet);
+        sampled.extend(copyable[..take].iter().map(|m| m.to_string()));
         let partial = if covered_from > since + 3600 { format!(" (history only back to {})", fmt_time(Some(covered_from))) } else { String::new() };
-        println!("   [{:>2}/{}] {}…  {:>4} buys, {:>4} sells{}", i + 1, wallets.len(), &w[..8.min(w.len())],
-            buys.len(), trades.len() - buys.len(), partial);
+        let sample = if take < copyable.len() { format!(", sampling {take} of {} tokens", copyable.len()) } else { String::new() };
+        println!("   [{:>2}/{}] {}…  {:>4} buys, {:>4} sells{}{}", i + 1, wallets.len(), &w[..8.min(w.len())],
+            buys.len(), trades.len() - buys.len(), partial, sample);
     }
-    println!("   {} tokens bought by copied wallets", buys_by_mint.len());
+    let buys_by_mint: HashMap<String, (i64, i64)> = all_buys.into_iter().filter(|(m, _)| sampled.contains(m)).collect();
+    println!("   {} tokens to replay", buys_by_mint.len());
 
     // Phase 2: each token's full trade tape around those buys
     println!("📥 Phase 2: price history of those tokens (window: first buy → last buy + {:.0}h)...", hold_hours);
@@ -716,7 +784,7 @@ async fn main() -> Result<()> {
                 h
             }
         })
-        .buffer_unordered((parallel / 2).max(1))
+        .buffer_unordered(3)
         .collect()
         .await;
     hist.retain(|h| !h.trades.is_empty());

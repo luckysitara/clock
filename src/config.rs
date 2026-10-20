@@ -13,6 +13,10 @@ pub struct BotConfig {
     pub min_tip_lamports: u64,
     pub max_tip_lamports: u64,
     pub tip_aggression_factor: f64,
+    pub tip_max_pct_of_trade: f64,
+    pub tip_max_panic_pct_of_trade: f64,
+    pub dry_run: bool,
+    pub paper_trades_file: String,
     pub copy_trade_amount_sol: f64,
     pub max_position_sol: f64,
     pub slippage_bps: u64,
@@ -76,6 +80,24 @@ impl BotConfig {
             .ok()
             .and_then(|v| v.parse().ok())
             .unwrap_or(0.65); // 65% of EV
+
+        // Tips never exceed this share of the trade value (entries/normal exits, panic exits/retries)
+        let tip_max_pct_of_trade = env::var("TIP_MAX_PCT_OF_TRADE")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(0.01);
+        let tip_max_panic_pct_of_trade = env::var("TIP_MAX_PANIC_PCT_OF_TRADE")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(0.03);
+
+        // Paper trading: simulate buys, track positions and exits, send nothing
+        let dry_run = env::var("DRY_RUN")
+            .ok()
+            .map(|v| matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on"))
+            .unwrap_or(false);
+        let paper_trades_file = env::var("PAPER_TRADES_FILE")
+            .unwrap_or_else(|_| "data/paper_trades.jsonl".to_string());
 
         let copy_trade_amount_sol = env::var("COPY_TRADE_AMOUNT_SOL")
             .ok()
@@ -145,8 +167,10 @@ impl BotConfig {
         // Also send transactions via public RPC sendTransaction (true) or Jito bundles only (false)
         let dual_route_rpc = dual_route_rpc_from_env();
 
-        let positions_file = env::var("POSITIONS_FILE")
-            .unwrap_or_else(|_| "data/positions.json".to_string());
+        // Paper positions are kept apart from real ones
+        let positions_file = env::var("POSITIONS_FILE").unwrap_or_else(|_| {
+            if dry_run { "data/paper_positions.json" } else { "data/positions.json" }.to_string()
+        });
 
         let max_curve_cache_entries = env::var("MAX_CURVE_CACHE_ENTRIES")
             .ok()
@@ -162,6 +186,10 @@ impl BotConfig {
             min_tip_lamports,
             max_tip_lamports,
             tip_aggression_factor,
+            tip_max_pct_of_trade,
+            tip_max_panic_pct_of_trade,
+            dry_run,
+            paper_trades_file,
             copy_trade_amount_sol,
             max_position_sol,
             slippage_bps,

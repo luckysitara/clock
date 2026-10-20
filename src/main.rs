@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use log::{error, info};
+use log::{error, info, warn};
 use solana_sdk::signer::Signer;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -51,6 +51,10 @@ async fn main() -> Result<()> {
             min_tip_lamports: 100_000,
             max_tip_lamports: 50_000_000,
             tip_aggression_factor: 0.65,
+            tip_max_pct_of_trade: 0.01,
+            tip_max_panic_pct_of_trade: 0.03,
+            dry_run: false,
+            paper_trades_file: "data/paper_trades.jsonl".to_string(),
             copy_trade_amount_sol: 0.2,
             max_position_sol: 2.0,
             slippage_bps: 500,
@@ -94,6 +98,8 @@ async fn main() -> Result<()> {
     info!("   Hard Stop Loss:      -{}%", config.hard_stop_loss_pct * 100.0);
     info!("   Take Profit Target:  {}x", config.take_profit_pct);
     info!("   Min Whale Buy:       {} SOL", config.min_whale_buy_sol);
+    info!("   Tip caps:            {:.1}% of trade (panic {:.1}%)", config.tip_max_pct_of_trade * 100.0, config.tip_max_panic_pct_of_trade * 100.0);
+    info!("   Mode:                {}", if config.dry_run { "DRY RUN (paper trading)" } else { "LIVE" });
     info!("   Routing:             {}", if config.dual_route_rpc { "Jito + public RPC" } else { "Jito bundles only" });
 
     // 3. Initialize Blockhash Cache Background Task
@@ -108,7 +114,7 @@ async fn main() -> Result<()> {
         config.min_tip_lamports,
         config.max_tip_lamports,
         config.tip_aggression_factor,
-    ));
+    ).with_trade_caps(config.tip_max_pct_of_trade, config.tip_max_panic_pct_of_trade));
 
     let jito_client = Arc::new(JitoClient::new(config.jito_block_engine_url.clone()));
     jito_client.spawn_prewarmer();
@@ -123,15 +129,19 @@ async fn main() -> Result<()> {
     // 5. Initialize In-Memory Bonding Curve Cache
     let curve_cache = Arc::new(RwLock::new(HashMap::new()));
 
-    // Recover open on-chain positions from trader wallet
-    position_manager
-        .recover_open_positions(&config.solana_rpc_url, &keypair.pubkey(), &curve_cache)
-        .await;
+    // Recover open on-chain positions from trader wallet (paper mode starts flat instead)
+    if config.dry_run {
+        warn!("📝 DRY RUN: nothing will be sent on-chain. Buys are simulated, trades logged to {}", config.paper_trades_file);
+    } else {
+        position_manager
+            .recover_open_positions(&config.solana_rpc_url, &keypair.pubkey(), &curve_cache)
+            .await;
+    }
 
     // 6. Setup MPSC Channel for Trade Signals & Spawn Execution Worker Pool
     let (tx_trades, rx_trades) = mpsc::channel::<TradeAction>(2000);
 
-    let executor = Arc::new(ExecutionEngine::new(
+    let executor = ExecutionEngine::new(
         keypair,
         jito_client,
         Arc::clone(&blockhash_cache),
@@ -139,7 +149,12 @@ async fn main() -> Result<()> {
         Arc::clone(&position_manager),
         config.solana_rpc_url.clone(),
         config.dual_route_rpc,
-    ));
+    );
+    let executor = Arc::new(if config.dry_run {
+        executor.with_dry_run(&config.paper_trades_file)
+    } else {
+        executor
+    });
 
     executor.spawn_worker(rx_trades);
 

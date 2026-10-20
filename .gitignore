@@ -30,3 +30,10 @@ data/positions.json.tmp
 
 # Git internals (never tracked by git anyway; listed so tools that read .gitignore skip it)
 .git/
+
+# Generated reports and paper trading state
+data/paper_trades.jsonl
+data/paper_positions.json
+data/paper_positions.json.tmp
+data/wallet_scores.json
+data/smart_money_wallets_scored.txt

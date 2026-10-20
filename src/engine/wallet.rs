@@ -112,3 +112,82 @@ pub async fn fetch_token_balance(
     }
     json["result"]["value"]["amount"].as_str()?.parse().ok()
 }
+
+/// A token account owned by the wallet whose balance is zero (closing it refunds its rent)
+#[derive(Debug, Clone, Copy)]
+pub struct EmptyTokenAccount {
+    pub account: Pubkey,
+    pub mint: Pubkey,
+    pub token_program: Pubkey,
+    pub rent_lamports: u64,
+}
+
+/// All zero-balance SPL Token and Token-2022 accounts owned by `wallet`
+pub async fn fetch_empty_token_accounts(client: &Client, rpc_url: &str, wallet: &Pubkey) -> Result<Vec<EmptyTokenAccount>> {
+    let mut empty = Vec::new();
+    for token_program in [spl_token_program_id(), spl_token_2022_program_id()] {
+        let json = rpc_call(
+            client,
+            rpc_url,
+            "getTokenAccountsByOwner",
+            serde_json::json!([
+                wallet.to_string(),
+                {"programId": token_program.to_string()},
+                {"encoding": "jsonParsed"}
+            ]),
+        )
+        .await?;
+
+        for acc in json["result"]["value"].as_array().cloned().unwrap_or_default() {
+            let info = &acc["account"]["data"]["parsed"]["info"];
+            let amount = info["tokenAmount"]["amount"].as_str().unwrap_or("1");
+            // Token-2022 accounts holding withheld transfer fees can't be closed
+            let withheld = info["extensions"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .any(|e| e["state"]["withheldAmount"].as_u64().unwrap_or(0) > 0);
+            if amount != "0" || withheld {
+                continue;
+            }
+            let (Ok(account), Ok(mint)) = (
+                Pubkey::from_str(acc["pubkey"].as_str().unwrap_or_default()),
+                Pubkey::from_str(info["mint"].as_str().unwrap_or_default()),
+            ) else {
+                continue;
+            };
+            empty.push(EmptyTokenAccount {
+                account,
+                mint,
+                token_program,
+                rent_lamports: acc["account"]["lamports"].as_u64().unwrap_or(0),
+            });
+        }
+    }
+    Ok(empty)
+}
+
+/// Whether `owner`'s associated token account for `mint` exists and is empty.
+/// None if the RPC call failed.
+pub async fn ata_is_empty(
+    client: &Client,
+    rpc_url: &str,
+    owner: &Pubkey,
+    mint: &Pubkey,
+    token_program: &Pubkey,
+) -> Option<bool> {
+    let (ata, _) = derive_associated_user_token(owner, mint, token_program);
+    let json = rpc_call(
+        client,
+        rpc_url,
+        "getAccountInfo",
+        serde_json::json!([ata.to_string(), {"encoding": "jsonParsed", "commitment": "confirmed"}]),
+    )
+    .await
+    .ok()?;
+    let value = &json["result"]["value"];
+    if value.is_null() {
+        return Some(false);
+    }
+    Some(value["data"]["parsed"]["info"]["tokenAmount"]["amount"].as_str() == Some("0"))
+}

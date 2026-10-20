@@ -397,3 +397,20 @@ fn test_backrun_dislocation_evaluation() {
 }
 
 
+
+#[test]
+fn test_tip_caps_scale_with_trade_size() {
+    use clockit::engine::tip_engine::JITO_MIN_TIP_LAMPORTS;
+    // min 0.001 SOL, max 0.005 SOL, caps 1% normal / 3% panic
+    let tips = TipEngine::new(1_000_000, 5_000_000, 0.65).with_trade_caps(0.01, 0.03);
+
+    // 0.035 SOL trade: 1% = 350_000 lamports caps the 1_000_000 default
+    assert_eq!(tips.trade_tip(35_000_000), 350_000);
+    // Panic: 3% = 1_050_000 caps the 5_000_000 max
+    assert_eq!(tips.panic_tip(35_000_000), 1_050_000);
+    // Large trade: configured tips apply unchanged
+    assert_eq!(tips.trade_tip(10_000_000_000), 1_000_000);
+    assert_eq!(tips.panic_tip(10_000_000_000), 5_000_000);
+    // Never below Jito's minimum
+    assert_eq!(tips.trade_tip(0), JITO_MIN_TIP_LAMPORTS);
+}

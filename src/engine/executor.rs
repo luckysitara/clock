@@ -70,7 +70,12 @@ pub struct ExecutionEngine {
     http_client: Client,
     /// Also send every transaction through public RPC `sendTransaction` (better landing, but public)
     dual_route_rpc: bool,
+    /// Paper trading: simulate instead of sending, and log trades to this file
+    paper_log: Option<std::path::PathBuf>,
 }
+
+/// Estimated Pump.fun fee per side (protocol + creator) used for paper-trade accounting
+const PAPER_PUMP_FEE_BPS: u64 = 125;
 
 impl ExecutionEngine {
     pub fn new(
@@ -90,6 +95,7 @@ impl ExecutionEngine {
             position_manager,
             rpc_url,
             dual_route_rpc,
+            paper_log: None,
             http_client: Client::builder()
                 .timeout(std::time::Duration::from_millis(2500))
                 .build()
@@ -154,11 +160,25 @@ impl ExecutionEngine {
         false
     }
 
+    /// Paper trading: nothing is sent; buys are simulated and every trade is logged to `paper_log`
+    pub fn with_dry_run(mut self, paper_log: impl Into<std::path::PathBuf>) -> Self {
+        self.paper_log = Some(paper_log.into());
+        self
+    }
+
+    pub fn is_dry_run(&self) -> bool {
+        self.paper_log.is_some()
+    }
+
     /// Fire-and-forget copy of the transaction through public RPC (when dual routing is on)
     fn send_via_rpc(&self, tx: &Transaction) {
-        if !self.dual_route_rpc {
-            return;
+        if self.dual_route_rpc {
+            self.send_rpc(tx);
         }
+    }
+
+    /// Fire-and-forget sendTransaction through the configured RPC
+    fn send_rpc(&self, tx: &Transaction) {
         let Ok(serialized) = bincode::serialize(tx) else { return };
         let rpc_payload = serde_json::json!({
             "jsonrpc": "2.0",
@@ -179,6 +199,82 @@ impl ExecutionEngine {
         tokio::spawn(async move {
             let _ = rpc_client.post(&rpc_url).json(&rpc_payload).send().await;
         });
+    }
+
+    /// Run the transaction through simulateTransaction; Err holds the failure and last logs
+    async fn simulate(&self, tx: &Transaction) -> Result<(), String> {
+        use base64::Engine;
+        let serialized = bincode::serialize(tx).map_err(|e| e.to_string())?;
+        let payload = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "simulateTransaction",
+            "params": [
+                base64::engine::general_purpose::STANDARD.encode(serialized),
+                {"encoding": "base64", "sigVerify": false, "replaceRecentBlockhash": true, "commitment": "processed"}
+            ]
+        });
+        let json: serde_json::Value = self
+            .http_client
+            .post(&self.rpc_url)
+            .json(&payload)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?
+            .json()
+            .await
+            .map_err(|e| e.to_string())?;
+        if let Some(err) = json.get("error") {
+            return Err(err.to_string());
+        }
+        let value = &json["result"]["value"];
+        if value["err"].is_null() {
+            Ok(())
+        } else {
+            let logs: Vec<&str> = value["logs"].as_array().into_iter().flatten().filter_map(|l| l.as_str()).collect();
+            Err(format!("{} | {}", value["err"], logs.iter().rev().take(3).rev().cloned().collect::<Vec<_>>().join(" | ")))
+        }
+    }
+
+    /// Append one paper trade record (JSON line)
+    fn log_paper(&self, record: serde_json::Value) {
+        let Some(path) = &self.paper_log else { return };
+        let mut record = record;
+        record["ts"] = serde_json::json!(std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0));
+        let line = format!("{}\n", record);
+        let result = (|| -> std::io::Result<()> {
+            if let Some(dir) = path.parent() {
+                std::fs::create_dir_all(dir)?;
+            }
+            use std::io::Write;
+            std::fs::OpenOptions::new().create(true).append(true).open(path)?.write_all(line.as_bytes())
+        })();
+        if let Err(e) = result {
+            warn!("Failed to write paper trade log {}: {}", path.display(), e);
+        }
+    }
+
+    /// Close our now-empty token account for `mint` to get its rent (~0.002 SOL) back
+    async fn close_empty_ata(&self, mint: &Pubkey, token_program: &Pubkey) {
+        let owner = self.keypair.pubkey();
+        // Give the sell a moment to be visible at confirmed commitment
+        tokio::time::sleep(std::time::Duration::from_millis(1500)).await;
+        if crate::engine::wallet::ata_is_empty(&self.http_client, &self.rpc_url, &owner, mint, token_program).await != Some(true) {
+            return;
+        }
+        let (ata, _) = crate::constants::derive_associated_user_token(&owner, mint, token_program);
+        let instructions = vec![
+            InstructionBuilder::set_compute_unit_limit(10_000),
+            InstructionBuilder::set_compute_unit_price(10_000),
+            InstructionBuilder::close_ata(&ata, &owner, &owner, token_program),
+        ];
+        let message = solana_sdk::message::Message::new(&instructions, Some(&owner));
+        let tx = Transaction::new(&[self.keypair.as_ref()], message, self.blockhash_cache.get_latest().await);
+        self.send_rpc(&tx);
+        info!("🧹 Closing empty token account {} for {} (rent refund, tx {})", ata, mint, tx.signatures[0]);
     }
 
     pub async fn execute_action(&self, action: TradeAction) -> Result<()> {
@@ -262,6 +358,14 @@ impl ExecutionEngine {
                 );
 
                 let sig = bundle_tx.signatures[0];
+
+                if self.is_dry_run() {
+                    match self.simulate(&bundle_tx).await {
+                        Ok(()) => info!("📝 [PAPER] Arbitrage for {} simulated OK (not sent)", mint),
+                        Err(e) => warn!("📝 [PAPER] Arbitrage for {} would fail: {}", mint, e),
+                    }
+                    return Ok(());
+                }
 
                 // Arbitrage is 100% private Jito bundle submission (Zero-Loss Guarantee)
                 // We deliberately DO NOT broadcast to public RPC to prevent sandwich attacks and avoid gas on dropped bundles
@@ -366,7 +470,7 @@ impl ExecutionEngine {
 
                 info!("🎯 Dispatching PumpSwap AMM Co-Snipe for Mint {} | Spend: {:.4} SOL | Exp Min Tokens: {}", mint, sol_amount_lamports as f64 / 1e9, scaled_tokens);
 
-                let tip = self.tip_engine.default_tip();
+                let tip = self.tip_engine.trade_tip(sol_amount_lamports);
                 let bundle_tx = self.jito_client.build_tip_bundle(
                     &self.keypair,
                     instructions,
@@ -375,6 +479,14 @@ impl ExecutionEngine {
                 );
 
                 let sig = bundle_tx.signatures[0];
+
+                if self.is_dry_run() {
+                    match self.simulate(&bundle_tx).await {
+                        Ok(()) => info!("📝 [PAPER] PumpSwap co-snipe for {} simulated OK (not sent)", mint),
+                        Err(e) => warn!("📝 [PAPER] PumpSwap co-snipe for {} would fail: {}", mint, e),
+                    }
+                    return Ok(());
+                }
 
                 self.send_via_rpc(&bundle_tx);
 
@@ -441,7 +553,7 @@ impl ExecutionEngine {
         );
 
         let instructions = vec![compute_cu, compute_price, create_ata_ix, buy_ix];
-        let tip = self.tip_engine.default_tip();
+        let tip = self.tip_engine.trade_tip(sol_amount_lamports);
 
         let bundle_tx = self.jito_client.build_tip_bundle(
             &self.keypair,
@@ -451,6 +563,37 @@ impl ExecutionEngine {
         );
 
         let sig = bundle_tx.signatures[0];
+
+        if self.is_dry_run() {
+            if let Err(e) = self.simulate(&bundle_tx).await {
+                warn!("📝 [PAPER] Buy simulation failed for {} (a live buy would fail too): {}", mint, e);
+                return Ok(false);
+            }
+            // Fill at the curve price without slippage, minus the estimated Pump.fun fee
+            let ideal = curve_state.calculate_buy_output(sol_amount_lamports, 0).map(|c| c.tokens_out).unwrap_or(calc.tokens_out);
+            let tokens = ideal - ideal * PAPER_PUMP_FEE_BPS / 10_000;
+            let entry_price_sol = (sol_amount_lamports as f64 / 1e9) / (tokens as f64 / 1e6);
+            let cost = sol_amount_lamports + tip;
+            info!("📝 [PAPER] BUY {} | {} tokens | cost {:.4} SOL (incl. tip {:.5})", mint, tokens, cost as f64 / 1e9, tip as f64 / 1e9);
+            self.log_paper(serde_json::json!({
+                "kind": "buy", "mint": mint.to_string(), "sol_lamports": cost, "tip_lamports": tip, "tokens": tokens
+            }));
+            self.position_manager
+                .add_position(Position {
+                    mint,
+                    bonding_curve: crate::constants::derive_bonding_curve(&mint).0,
+                    entry_price_sol,
+                    highest_price_sol: entry_price_sol,
+                    token_balance: tokens,
+                    sol_invested_lamports: cost,
+                    dev_wallet: (creator != Pubkey::default()).then_some(creator),
+                    dev_initial_balance,
+                    token_program: token_prog,
+                    is_selling: false,
+                })
+                .await;
+            return Ok(true);
+        }
 
         self.send_via_rpc(&bundle_tx);
         let bundle_id = self.jito_client.send_bundle(&bundle_tx).await?;
@@ -547,6 +690,25 @@ impl ExecutionEngine {
             token_prog
         );
 
+        if self.is_dry_run() {
+            let invested = self.position_manager.get_position(&mint).await.map(|p| p.sol_invested_lamports).unwrap_or(0);
+            let tip = if is_panic { self.tip_engine.panic_tip(calc.sol_out) } else { self.tip_engine.trade_tip(calc.sol_out) };
+            let fee = calc.sol_out * PAPER_PUMP_FEE_BPS / 10_000;
+            let proceeds = calc.sol_out.saturating_sub(fee + tip);
+            let pnl = proceeds as i64 - invested as i64;
+            info!(
+                "📝 [PAPER] SELL {}{} | proceeds {:.4} SOL (tip {:.5}, fee {:.5}) | P&L {:+.4} SOL",
+                mint, if is_panic { " (panic)" } else { "" },
+                proceeds as f64 / 1e9, tip as f64 / 1e9, fee as f64 / 1e9, pnl as f64 / 1e9
+            );
+            self.log_paper(serde_json::json!({
+                "kind": "sell", "mint": mint.to_string(), "sol_lamports": proceeds, "tip_lamports": tip,
+                "invested_lamports": invested, "pnl_lamports": pnl, "panic": is_panic
+            }));
+            self.position_manager.remove_position(&mint).await;
+            return Ok(());
+        }
+
         let creator = curve_state.creator;
         let compute_cu = InstructionBuilder::set_compute_unit_limit(150_000);
         let compute_price = InstructionBuilder::set_compute_unit_price(if is_panic {
@@ -569,9 +731,9 @@ impl ExecutionEngine {
 
             let instructions = vec![compute_cu.clone(), compute_price.clone(), sell_ix];
             let tip = if is_panic || attempt > 1 {
-                self.tip_engine.max_tip_lamports
+                self.tip_engine.panic_tip(calc.sol_out)
             } else {
-                self.tip_engine.default_tip()
+                self.tip_engine.trade_tip(calc.sol_out)
             };
 
             let bundle_tx = self.jito_client.build_tip_bundle(
@@ -594,6 +756,7 @@ impl ExecutionEngine {
             if landed {
                 info!("🎉 SELL CONFIRMED ON-CHAIN! Tx: https://solscan.io/tx/{} | Mint: {} | Tokens Sold: {} | Min Floor: {:.4} SOL", sig, mint, token_amount, sell_min_floor as f64 / 1e9);
                 self.position_manager.remove_position(&mint).await;
+                self.close_empty_ata(&mint, &token_prog).await;
                 return Ok(());
             }
             warn!("⚠️ Sell attempt {} for mint {} did not land. Retrying immediately with 1-lamport floor...", attempt, mint);

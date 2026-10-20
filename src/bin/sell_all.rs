@@ -42,7 +42,7 @@ async fn main() -> Result<()> {
         config.min_tip_lamports,
         config.max_tip_lamports,
         config.tip_aggression_factor,
-    ));
+    ).with_trade_caps(config.tip_max_pct_of_trade, config.tip_max_panic_pct_of_trade));
 
     let jito_client = Arc::new(JitoClient::new(config.jito_block_engine_url.clone()));
     jito_client.spawn_prewarmer();

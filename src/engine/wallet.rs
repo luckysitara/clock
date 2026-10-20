@@ -210,7 +210,7 @@ pub async fn fetch_buy_cost(
             client,
             rpc_url,
             "getTransaction",
-            serde_json::json!([signature, {"encoding": "json", "commitment": "confirmed", "maxSupportedTransactionVersion": 0}]),
+            serde_json::json!([signature, {"encoding": "json", "commitment": "confirmed", "maxSupportedTransactionVersion": 1}]),
         )
         .await
         .ok()?;

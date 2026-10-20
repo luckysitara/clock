@@ -308,7 +308,7 @@ pub async fn analyze_wallet(
                 client,
                 rpc_url,
                 "getTransaction",
-                json!([sig, {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 0, "commitment": "confirmed"}]),
+                json!([sig, {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 1, "commitment": "confirmed"}]),
             )
             .await;
             (sig, res)

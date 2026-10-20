@@ -191,3 +191,50 @@ pub async fn ata_is_empty(
     }
     Some(value["data"]["parsed"]["info"]["tokenAmount"]["amount"].as_str() == Some("0"))
 }
+
+/// SOL a confirmed buy actually cost `payer`: their balance drop minus the network fee, `tip_lamports`
+/// and the rent of their token account if the buy created it. Pump.fun buys an exact token amount, so this is
+/// below the configured buy size by roughly the slippage allowance. None if the transaction can't be read.
+pub async fn fetch_buy_cost(
+    client: &Client,
+    rpc_url: &str,
+    signature: &str,
+    payer: &Pubkey,
+    mint: &Pubkey,
+    token_program: &Pubkey,
+    tip_lamports: u64,
+) -> Option<u64> {
+    let ata = derive_associated_user_token(payer, mint, token_program).0.to_string();
+    for _ in 0..5 {
+        let json = rpc_call(
+            client,
+            rpc_url,
+            "getTransaction",
+            serde_json::json!([signature, {"encoding": "json", "commitment": "confirmed", "maxSupportedTransactionVersion": 0}]),
+        )
+        .await
+        .ok()?;
+        let tx = &json["result"];
+        if tx.is_null() {
+            tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+            continue;
+        }
+        let meta = &tx["meta"];
+        let (pre, post) = (meta["preBalances"].as_array()?, meta["postBalances"].as_array()?);
+        let keys: Vec<&str> = tx["transaction"]["message"]["accountKeys"].as_array()?.iter()
+            .chain(meta["loadedAddresses"]["writable"].as_array().into_iter().flatten())
+            .filter_map(|k| k.as_str())
+            .collect();
+        if keys.first() != Some(&payer.to_string().as_str()) {
+            return None;
+        }
+        // A token account created by this buy starts at 0 lamports; what it holds afterwards is rent
+        let rent = keys.iter().position(|k| *k == ata)
+            .filter(|&i| pre.get(i).and_then(|v| v.as_u64()) == Some(0))
+            .and_then(|i| post.get(i)?.as_u64())
+            .unwrap_or(0);
+        let spent = pre[0].as_u64()?.checked_sub(post[0].as_u64()?)?;
+        return spent.checked_sub(meta["fee"].as_u64()? + tip_lamports + rent);
+    }
+    None
+}

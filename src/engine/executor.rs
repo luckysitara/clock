@@ -18,7 +18,7 @@ use crate::{
         jito::JitoClient,
         position_manager::{Position, PositionManager},
         tip_engine::TipEngine,
-        wallet::fetch_token_balance,
+        wallet::{fetch_buy_cost, fetch_token_balance},
     },
 };
 
@@ -623,11 +623,12 @@ impl ExecutionEngine {
                 }
                 info!("📝 [PAPER] Wallet can't fund this buy right now; paper-trading it anyway");
             }
-            // Fill at the curve price without slippage, minus the estimated Pump.fun fee
-            let ideal = curve_state.calculate_buy_output(sol_amount_lamports, 0).map(|c| c.tokens_out).unwrap_or(calc.tokens_out);
-            let tokens = ideal - ideal * PAPER_PUMP_FEE_BPS / 10_000;
-            let entry_price_sol = (sol_amount_lamports as f64 / 1e9) / (tokens as f64 / 1e6);
-            let cost = sol_amount_lamports + tip;
+            // Pump.fun buys exactly the ordered amount: pay its curve cost plus the estimated fee
+            let tokens = calc.tokens_out;
+            let curve_cost = { let mut c = curve_state; c.apply_buy(tokens) }.unwrap_or(calc.max_sol_cost);
+            let swap_cost = curve_cost + curve_cost * PAPER_PUMP_FEE_BPS / 10_000;
+            let entry_price_sol = (swap_cost as f64 / 1e9) / (tokens as f64 / 1e6);
+            let cost = swap_cost + tip;
             info!("📝 [PAPER] BUY {} | {} tokens | cost {:.4} SOL (incl. tip {:.5})", mint, tokens, cost as f64 / 1e9, tip as f64 / 1e9);
             self.log_paper(serde_json::json!({
                 "kind": "buy", "mint": mint.to_string(), "sol_lamports": cost, "tip_lamports": tip, "tokens": tokens
@@ -660,20 +661,27 @@ impl ExecutionEngine {
             return Ok(false);
         }
 
-        // calc.tokens_out is the slippage-adjusted minimum. Use what actually arrived, so the
-        // sell size is right and the entry price (which anchors every stop) isn't inflated by slippage
-        let (token_balance, entry_price_sol) =
+        // Pump.fun buys exactly calc.tokens_out and charges only what those cost, which is less than
+        // sol_amount_lamports. Book the real cost so the entry price (which anchors every stop) is right
+        let token_balance =
             match fetch_token_balance(&self.http_client, &self.rpc_url, &payer_pubkey, &mint, &token_prog).await {
-                Some(received) if received > 0 => {
-                    (received, (sol_amount_lamports as f64 / 1e9) / (received as f64 / 1e6))
-                }
+                Some(received) if received > 0 => received,
                 _ => {
-                    warn!("Could not read received token balance for {}; using slippage-adjusted estimate", mint);
-                    (calc.tokens_out, calc.effective_price_sol)
+                    warn!("Could not read received token balance for {}; using the ordered amount", mint);
+                    calc.tokens_out
                 }
             };
+        let sol_spent_lamports =
+            match fetch_buy_cost(&self.http_client, &self.rpc_url, &sig.to_string(), &payer_pubkey, &mint, &token_prog, tip).await {
+                Some(cost) if cost > 0 => cost,
+                _ => {
+                    warn!("Could not read the buy cost for {}; booking the full buy size", mint);
+                    sol_amount_lamports
+                }
+            };
+        let entry_price_sol = (sol_spent_lamports as f64 / 1e9) / (token_balance as f64 / 1e6);
 
-        info!("🎉 TRADE CONFIRMED ON-CHAIN! Tx: https://solscan.io/tx/{} | Mint: {} | Tokens: {} | Entry: {:.10} SOL | Sol Spent: {:.4} SOL", sig, mint, token_balance, entry_price_sol, sol_amount_lamports as f64 / 1e9);
+        info!("🎉 TRADE CONFIRMED ON-CHAIN! Tx: https://solscan.io/tx/{} | Mint: {} | Tokens: {} | Entry: {:.10} SOL | Sol Spent: {:.4} SOL", sig, mint, token_balance, entry_price_sol, sol_spent_lamports as f64 / 1e9);
         let dev = (creator != Pubkey::default()).then_some(creator);
         self.position_manager
             .add_position(Position {
@@ -682,7 +690,7 @@ impl ExecutionEngine {
                 entry_price_sol,
                 highest_price_sol: entry_price_sol,
                 token_balance,
-                sol_invested_lamports: sol_amount_lamports,
+                sol_invested_lamports: sol_spent_lamports,
                 dev_wallet: dev,
                 dev_initial_balance,
                 token_program: token_prog,

@@ -4,7 +4,10 @@
 //! 2. Look up SOL balances of the most active --candidates, keep those worth > --min-usd
 //! 3. Take the --top richest and rebuild each one's P&L and trading style from on-chain history
 //!
-//! Usage: discover_wallets [--minutes 15] [--candidates 6000] [--min-usd 1000] [--top 1000]
+//! Wallet source: --source stream (default; live Yellowstone trades) or --source leaderboard
+//! (pump.fun's PnL leaderboard: daily/weekly/monthly × realized/unrealized/combined, ≤100 each).
+//!
+//! Usage: discover_wallets [--source stream|leaderboard] [--minutes 15] [--candidates 6000] [--min-usd 1000] [--top 1000]
 //!                         [--limit 150] [--parallel 8] [--min-win-rate 0.7] [--min-trades 10]
 //!                         [--sol-price USD]
 //! Writes data/top_wallets.json, data/top_wallets_winrate.json and data/top_wallets_winrate.txt
@@ -41,6 +44,11 @@ struct WalletProfile {
     sol_balance: f64,
     usd_value: f64,
     stream_trades: u32,
+    /// Best (lowest) rank on any pump.fun leaderboard board, and the boards it appeared on
+    leaderboard_rank: Option<u32>,
+    leaderboard_boards: Vec<String>,
+    /// Highest pump.fun-reported PnL across those boards
+    leaderboard_pnl_sol: Option<f64>,
     txs_scanned: u32,
     closed_trades: usize,
     open_positions: usize,
@@ -212,6 +220,43 @@ async fn stream_window(
     Ok(())
 }
 
+#[derive(Default, Clone)]
+struct BoardInfo {
+    best_rank: u32,
+    boards: Vec<String>,
+    pnl_sol: f64,
+}
+
+/// Phase 1 (leaderboard source): every wallet on pump.fun's PnL leaderboards
+async fn fetch_leaderboard(client: &reqwest::Client) -> Result<HashMap<String, BoardInfo>> {
+    let mut wallets: HashMap<String, BoardInfo> = HashMap::new();
+    for period in ["daily", "weekly", "monthly"] {
+        for sort in ["realized", "unrealized", "combined"] {
+            let url = format!("https://frontend-api-v3.pump.fun/pnl-leaderboard?period={}&sort={}&limit=100", period, sort);
+            let resp = client
+                .get(&url)
+                .header("User-Agent", "Mozilla/5.0")
+                .header("Origin", "https://pump.fun")
+                .send()
+                .await
+                .with_context(|| format!("leaderboard {} {}", period, sort))?;
+            let status = resp.status();
+            let body: serde_json::Value = resp.json().await.unwrap_or_default();
+            let entries = body["entries"].as_array().cloned().unwrap_or_default();
+            println!("   {:>7} / {:<10} → {} wallets (http {})", period, sort, entries.len(), status.as_u16());
+            for e in entries {
+                let Some(wallet) = e["walletAddress"].as_str() else { continue };
+                let rank = e["rank"].as_u64().unwrap_or(9999) as u32;
+                let info = wallets.entry(wallet.to_string()).or_insert(BoardInfo { best_rank: rank, ..Default::default() });
+                info.best_rank = info.best_rank.min(rank);
+                info.boards.push(format!("{}/{}#{}", period, sort, rank));
+                info.pnl_sol = info.pnl_sol.max(e["pnlSol"].as_f64().unwrap_or(0.0));
+            }
+        }
+    }
+    Ok(wallets)
+}
+
 fn classify(p: &WalletProfile) -> String {
     let pumpfun = *p.venues.get("pump.fun").unwrap_or(&0);
     let post_grad = p.venues.get("pumpswap").unwrap_or(&0) + p.venues.get("raydium").unwrap_or(&0);
@@ -244,6 +289,7 @@ async fn main() -> Result<()> {
     let parallel: usize = arg(&args, "--parallel", 8);
     let min_win_rate: f64 = arg(&args, "--min-win-rate", 0.7);
     let min_trades: usize = arg(&args, "--min-trades", 10);
+    let source: String = arg(&args, "--source", "stream".to_string());
 
     let config = BotConfig::load_from_env().context("Failed to load config")?;
     let client = reqwest::Client::builder().timeout(Duration::from_secs(30)).build()?;
@@ -256,8 +302,19 @@ async fn main() -> Result<()> {
     println!("💵 SOL price: ${:.2} → ${} = {:.2} SOL", sol_usd, min_usd, min_usd / sol_usd);
 
     // Phase 1
-    println!("📡 Phase 1: collecting Pump.fun traders from the live stream for {} min...", minutes);
-    let traders = collect_traders(&config, minutes).await?;
+    let mut boards: HashMap<String, BoardInfo> = HashMap::new();
+    let traders = if source == "leaderboard" {
+        println!("🏆 Phase 1: reading pump.fun PnL leaderboards...");
+        boards = fetch_leaderboard(&client).await?;
+        println!("   {} unique leaderboard wallets", boards.len());
+        boards
+            .iter()
+            .map(|(w, b)| (w.clone(), Activity { trades: b.boards.len() as u32, sol_volume: b.pnl_sol }))
+            .collect()
+    } else {
+        println!("📡 Phase 1: collecting Pump.fun traders from the live stream for {} min...", minutes);
+        collect_traders(&config, minutes).await?
+    };
     let mut active: Vec<(String, Activity)> = traders.into_iter().collect();
     active.sort_by(|a, b| b.1.sol_volume.partial_cmp(&a.1.sol_volume).unwrap_or(std::cmp::Ordering::Equal));
     active.truncate(candidates);
@@ -290,7 +347,7 @@ async fn main() -> Result<()> {
     let done = std::sync::atomic::AtomicUsize::new(0);
     let mut profiles: Vec<WalletProfile> = stream::iter(rich)
         .map(|(wallet, sol_balance)| {
-            let (client, rpc_url, done, activity) = (&client, &rpc_url, &done, &activity);
+            let (client, rpc_url, done, activity, boards) = (&client, &rpc_url, &done, &activity, &boards);
             async move {
                 let result = analyze_wallet(client, rpc_url, &wallet, limit, 4).await;
                 let n = done.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
@@ -302,6 +359,9 @@ async fn main() -> Result<()> {
                     sol_balance,
                     usd_value: sol_balance * sol_usd,
                     stream_trades: activity.get(&wallet).map_or(0, |a| a.trades),
+                    leaderboard_rank: boards.get(&wallet).map(|b| b.best_rank),
+                    leaderboard_boards: boards.get(&wallet).map(|b| b.boards.clone()).unwrap_or_default(),
+                    leaderboard_pnl_sol: boards.get(&wallet).map(|b| b.pnl_sol),
                     txs_scanned: 0, closed_trades: 0, open_positions: 0, wins: 0, win_rate: 0.0,
                     profit_factor: 0.0, realized_sol: 0.0, return_pct: 0.0, avg_trade_sol: 0.0,
                     median_hold_secs: 0, txs_per_hour: 0.0, launch_tx_buys: 0,

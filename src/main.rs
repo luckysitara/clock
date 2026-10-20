@@ -65,6 +65,9 @@ async fn main() -> Result<()> {
             min_creator_buy_sol: 0.20,
             min_whale_buy_sol: 1.0,
             target_wallets: vec![],
+            signal_wallets: vec![],
+            signal_min_wallets: 2,
+            signal_window_secs: 10,
             dual_route_rpc: true,
             positions_file: "data/positions.json".to_string(),
             max_curve_cache_entries: 50_000,
@@ -91,6 +94,10 @@ async fn main() -> Result<()> {
     );
     info!("   Jito Block Engine:   {}", config.jito_block_engine_url);
     info!("   Target Wallets:      {} addresses", config.target_wallets.len());
+    info!(
+        "   Signal Wallets:      {} addresses (buy when {}+ buy within {}s)",
+        config.signal_wallets.len(), config.signal_min_wallets, config.signal_window_secs
+    );
     info!("   Min Dev Buy Filter:  {} SOL (Launch Snipe Concurrence)", config.min_creator_buy_sol);
     info!("   Copy-Trade Amount:   {} SOL", config.copy_trade_amount_sol);
     info!("   Slippage Tolerance:  {} bps ({}%)", config.slippage_bps, config.slippage_bps as f64 / 100.0);

@@ -612,6 +612,7 @@ async fn main() -> Result<()> {
                                                         dev_wallet: None,
                                                         dev_initial_balance: 0,
                                                         token_program,
+                                                        leaders: vec![buyer],
                                                     }).await;
                                                 });
                                             }

@@ -25,6 +25,7 @@
   - **Hard Stop-Loss:** Exits if price falls the configured percentage below entry (e.g. 20%).
   - **Automated Take-Profit:** Locks in gains when reaching target multiples (e.g. 2.5x).
   - **Dev Dump Exit:** Watches creator sells in the `Processed` state and sends a high-tip panic exit when the dev sells at least `DEV_DUMP_THRESHOLD_PCT` of the balance they held when we entered (taken from the create tx for snipes, fetched via RPC for copy-trades). If that balance is unknown, any dev sell triggers the exit.
+  - **Leader Exit:** every copy-trade, snipe and signal buy remembers the wallets it followed and sells as soon as any of them sells.
   - **Capital Reservation:** Buys reserve capital before they are sent, so repeated whale signals on the same mint, or many signals at once, cannot exceed `MAX_POSITION_SOL` or open duplicate positions.
   - **Restart-Safe Positions:** Entry price, peak price, invested SOL and dev balance are saved to `POSITIONS_FILE`, so stops and take-profit survive a restart.
 
@@ -125,6 +126,9 @@ cargo run --release
 | `TIP_MAX_PANIC_PCT_OF_TRADE` | Max Jito tip as a share of trade value (panic exits, sell retries) | `0.03` (3%) |
 | `DRY_RUN` | Paper trading: simulate buys, track exits on live prices, send nothing | `false` |
 | `PAPER_TRADES_FILE` | Where dry-run trades are logged (JSON lines) | `data/paper_trades.jsonl` |
+| `SIGNAL_WALLETS` | Fast sniper wallets used as a group-buy signal instead of being copied one by one | *empty* |
+| `SIGNAL_MIN_WALLETS` | Buy when at least this many signal wallets buy the same token… | `2` |
+| `SIGNAL_WINDOW_SECS` | …within this many seconds | `10` |
 | `DUAL_ROUTE_RPC` | Also send transactions via public RPC (`false` = Jito bundles only) | `true` |
 | `POSITIONS_FILE` | Where open-position entry data is persisted | `data/positions.json` |
 | `MAX_CURVE_CACHE_ENTRIES` | Bonding curves kept in memory before the cache is cleared | `50000` |
@@ -138,6 +142,7 @@ cargo run --release
 | :--- | :--- |
 | `cargo run --release --bin pnl_report [WALLET]` | Real P&L from on-chain history: per-token results, win rate, profit factor, tips, fees, failed-tx reasons |
 | `cargo run --release --bin pnl_report -- --paper` | Summarize dry-run paper trades |
+| `cargo run --release --bin discover_wallets` | Find the richest active Pump.fun traders from the live stream and profile their strategies (win rate, ROI, hold time, style) |
 | `cargo run --release --bin score_wallets` | Rank `TARGET_WALLETS` by their own Pump.fun results; keepers go to `data/smart_money_wallets_scored.txt` |
 | `cargo run --release --bin close_empty_accounts [-- --execute]` | Close empty token accounts to recover their rent (~0.002 SOL each) |
 | `cargo run --release --bin check_position` | Current holdings, sell value and P&L vs. saved entry |

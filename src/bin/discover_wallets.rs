@@ -90,8 +90,37 @@ async fn sol_price_usd(client: &reqwest::Client) -> Option<f64> {
         .as_f64()
 }
 
-/// Phase 1: every signer that traded on Pump.fun during the window
+/// Phase 1: every signer that traded on Pump.fun during the window (reconnects on drops)
 async fn collect_traders(config: &BotConfig, minutes: u64) -> Result<HashMap<String, Activity>> {
+    let window = Duration::from_secs(minutes * 60);
+    let start = Instant::now();
+    let mut traders: HashMap<String, Activity> = HashMap::new();
+    let mut txs = 0u64;
+    let mut reconnects = 0u32;
+
+    while start.elapsed() < window {
+        match stream_window(config, start, window, &mut traders, &mut txs).await {
+            Ok(()) => break,
+            Err(e) => {
+                reconnects += 1;
+                eprintln!("\n   stream dropped ({:#}); reconnecting (#{}), {} traders so far", e, reconnects, traders.len());
+                tokio::time::sleep(Duration::from_secs(3)).await;
+            }
+        }
+    }
+    eprintln!();
+    println!("   collected {} txs, {} unique traders, {} reconnects", txs, traders.len(), reconnects);
+    Ok(traders)
+}
+
+/// One stream connection; Ok when the window is over, Err when the connection drops
+async fn stream_window(
+    config: &BotConfig,
+    start: Instant,
+    window: Duration,
+    traders: &mut HashMap<String, Activity>,
+    txs: &mut u64,
+) -> Result<()> {
     let mut builder = GeyserGrpcClient::build_from_shared(config.yellowstone_grpc_url.clone())?;
     if config.yellowstone_grpc_url.starts_with("https://") {
         builder = builder.tls_config(yellowstone_grpc_client::ClientTlsConfig::new().with_enabled_roots())?;
@@ -121,25 +150,19 @@ async fn collect_traders(config: &BotConfig, minutes: u64) -> Result<HashMap<Str
     let (_sink, mut stream) = client.subscribe_with_request(Some(request)).await?;
 
     let pumpfun = clockit::constants::pumpfun_program_id().to_bytes();
-    let window = Duration::from_secs(minutes * 60);
-    let start = Instant::now();
-    let mut traders: HashMap<String, Activity> = HashMap::new();
-    let mut txs = 0u64;
     let mut last_print = Instant::now();
 
     while start.elapsed() < window {
         let msg = match tokio::time::timeout(window.saturating_sub(start.elapsed()), stream.next()).await {
             Ok(Some(Ok(msg))) => msg,
-            Ok(Some(Err(e))) => {
-                eprintln!("\nstream error: {} (keeping {} traders collected so far)", e, traders.len());
-                break;
-            }
-            Ok(None) | Err(_) => break,
+            Ok(Some(Err(e))) => anyhow::bail!("{}", e),
+            Ok(None) => anyhow::bail!("stream ended"),
+            Err(_) => return Ok(()),
         };
         let Some(UpdateOneof::Transaction(update)) = msg.update_oneof else { continue };
         let Some(info) = update.transaction.as_ref() else { continue };
         let Some(message) = info.transaction.as_ref().and_then(|t| t.message.as_ref()) else { continue };
-        txs += 1;
+        *txs += 1;
 
         let signers = message.header.as_ref().map_or(1, |h| h.num_required_signatures as usize);
         let mut keys: Vec<&[u8]> = message.account_keys.iter().map(|k| k.as_slice()).collect();
@@ -186,8 +209,7 @@ async fn collect_traders(config: &BotConfig, minutes: u64) -> Result<HashMap<Str
             );
         }
     }
-    eprintln!();
-    Ok(traders)
+    Ok(())
 }
 
 fn classify(p: &WalletProfile) -> String {

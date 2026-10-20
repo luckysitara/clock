@@ -23,6 +23,7 @@ fn position(mint: Pubkey, dev: Option<Pubkey>, dev_initial_balance: u64) -> Posi
         dev_initial_balance,
         token_program: Pubkey::new_unique(),
         is_selling: false,
+        leaders: Vec::new(),
     }
 }
 
@@ -116,5 +117,37 @@ async fn positions_persist_to_state_file() {
     let saved = std::fs::read_to_string(&path).unwrap();
     assert!(!saved.contains(&mint.to_string()));
 
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[tokio::test]
+async fn leader_sell_triggers_exit_once() {
+    let pm = manager();
+    let (mint, leader, other) = (Pubkey::new_unique(), Pubkey::new_unique(), Pubkey::new_unique());
+    let mut pos = position(mint, None, 0);
+    pos.leaders = vec![leader];
+    pm.add_position(pos).await;
+
+    // Someone else selling is not our cue
+    assert!(pm.check_leader_exit(&mint, &other).await.is_none());
+    // The copied wallet selling is
+    assert!(pm.check_leader_exit(&mint, &leader).await.is_some());
+    // Already exiting: no second signal
+    assert!(pm.check_leader_exit(&mint, &leader).await.is_none());
+}
+
+#[tokio::test]
+async fn leaders_survive_restart_via_state_file() {
+    let dir = std::env::temp_dir().join(format!("clockit-test-{}", Pubkey::new_unique()));
+    let path = dir.join("positions.json");
+    let mint = Pubkey::new_unique();
+    let leader = Pubkey::new_unique();
+    let pm = manager().with_state_file(&path);
+    let mut pos = position(mint, None, 0);
+    pos.leaders = vec![leader];
+    pm.add_position(pos).await;
+
+    let saved = clockit::engine::position_manager::load_saved_positions(&path);
+    assert_eq!(saved[&mint].leaders, vec![leader.to_string()]);
     let _ = std::fs::remove_dir_all(dir);
 }

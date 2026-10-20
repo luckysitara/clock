@@ -33,6 +33,8 @@ pub enum TradeAction {
         /// Dev token balance at entry if known (0 = unknown, fetched after the buy lands)
         dev_initial_balance: u64,
         token_program: Option<Pubkey>,
+        /// Wallets whose buy this copies; the position exits when any of them sells
+        leaders: Vec<Pubkey>,
     },
     Sell {
         mint: Pubkey,
@@ -317,6 +319,7 @@ impl ExecutionEngine {
                 dev_wallet,
                 dev_initial_balance,
                 token_program,
+                leaders,
             } => {
                 let result = self
                     .execute_buy(
@@ -327,6 +330,7 @@ impl ExecutionEngine {
                         dev_wallet,
                         dev_initial_balance,
                         token_program,
+                        leaders,
                     )
                     .await;
                 // Free the capital reservation unless the position was opened
@@ -545,6 +549,7 @@ impl ExecutionEngine {
         dev_wallet: Option<Pubkey>,
         dev_initial_balance: u64,
         token_program: Option<Pubkey>,
+        leaders: Vec<Pubkey>,
     ) -> Result<bool> {
         let blockhash = self.blockhash_cache.get_latest().await;
         let payer_pubkey = self.keypair.pubkey();
@@ -639,6 +644,7 @@ impl ExecutionEngine {
                     dev_initial_balance,
                     token_program: token_prog,
                     is_selling: false,
+                    leaders: leaders.clone(),
                 })
                 .await;
             return Ok(true);
@@ -681,6 +687,7 @@ impl ExecutionEngine {
                 dev_initial_balance,
                 token_program: token_prog,
                 is_selling: false,
+                leaders,
             })
             .await;
 

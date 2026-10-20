@@ -22,6 +22,8 @@ pub struct Position {
     pub dev_initial_balance: u64,
     pub token_program: Pubkey,
     pub is_selling: bool,
+    /// Wallets whose buy we copied; when any of them sells, we exit
+    pub leaders: Vec<Pubkey>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -50,6 +52,8 @@ pub struct SavedPosition {
     pub sol_invested_lamports: u64,
     pub dev_wallet: Option<String>,
     pub dev_initial_balance: u64,
+    #[serde(default)]
+    pub leaders: Vec<String>,
 }
 
 /// Read a positions state file (empty if missing or unreadable)
@@ -246,6 +250,18 @@ impl PositionManager {
         None
     }
 
+    /// A wallet we copied into this position just sold: exit with it
+    pub async fn check_leader_exit(&self, mint: &Pubkey, seller: &Pubkey) -> Option<Position> {
+        let mut state = self.state.write().await;
+        let pos = state.positions.get_mut(mint)?;
+        if pos.is_selling || !pos.leaders.contains(seller) {
+            return None;
+        }
+        warn!("🏃 LEADER EXIT for {}: copied wallet {} is selling, exiting with it", mint, seller);
+        pos.is_selling = true;
+        Some(pos.clone())
+    }
+
     /// Remove position once sell is confirmed on-chain
     pub async fn remove_position(&self, mint: &Pubkey) -> Option<Position> {
         let mut state = self.state.write().await;
@@ -308,6 +324,7 @@ impl PositionManager {
                 sol_invested_lamports: p.sol_invested_lamports,
                 dev_wallet: p.dev_wallet.map(|d| d.to_string()),
                 dev_initial_balance: p.dev_initial_balance,
+                leaders: p.leaders.iter().map(|l| l.to_string()).collect(),
             })
             .collect();
 
@@ -392,6 +409,7 @@ impl PositionManager {
                         dev_initial_balance: rec.dev_initial_balance,
                         token_program: holding.token_program,
                         is_selling: false,
+                        leaders: rec.leaders.iter().filter_map(|l| Pubkey::from_str(l).ok()).collect(),
                     }
                 }
                 None => {
@@ -415,6 +433,7 @@ impl PositionManager {
                         dev_initial_balance: 0,
                         token_program: holding.token_program,
                         is_selling: false,
+                        leaders: Vec::new(),
                     }
                 }
             };

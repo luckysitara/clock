@@ -45,6 +45,8 @@ pub struct YellowstoneStreamer {
     position_manager: Arc<PositionManager>,
     trade_sender: mpsc::Sender<TradeAction>,
     rpc_client: Arc<solana_client::nonblocking::rpc_client::RpcClient>,
+    /// Recent signal-wallet buys per mint: (wallet, when)
+    signal_hits: std::sync::Mutex<HashMap<Pubkey, Vec<(Pubkey, std::time::Instant)>>>,
 }
 
 impl YellowstoneStreamer {
@@ -63,6 +65,77 @@ impl YellowstoneStreamer {
             position_manager,
             trade_sender,
             rpc_client,
+            signal_hits: std::sync::Mutex::new(HashMap::new()),
+        }
+    }
+
+    /// Record a signal-wallet buy; returns the distinct signal wallets that bought `mint`
+    /// within the window once there are enough of them (and resets the mint)
+    fn record_signal_buy(&self, mint: Pubkey, wallet: Pubkey) -> Option<Vec<Pubkey>> {
+        let window = Duration::from_secs(self.config.signal_window_secs);
+        let now = std::time::Instant::now();
+        let mut hits = self.signal_hits.lock().unwrap_or_else(|e| e.into_inner());
+        hits.retain(|_, v| {
+            v.retain(|(_, t)| now.duration_since(*t) <= window);
+            !v.is_empty()
+        });
+        let entry = hits.entry(mint).or_default();
+        if !entry.iter().any(|(w, _)| *w == wallet) {
+            entry.push((wallet, now));
+        }
+        if entry.len() >= self.config.signal_min_wallets {
+            let wallets = entry.iter().map(|(w, _)| *w).collect();
+            hits.remove(&mint);
+            Some(wallets)
+        } else {
+            None
+        }
+    }
+
+    /// Reserve capital, fetch the curve and queue a copy buy that exits when any leader sells
+    async fn trigger_copy_buy(&self, mint: Pubkey, token_prog: Pubkey, leaders: Vec<Pubkey>, label: &str) {
+        let max_position_lamports = (self.config.max_position_sol * 1e9) as u64;
+        let my_sol_lamports = (self.config.copy_trade_amount_sol * 1e9) as u64;
+        match self.position_manager.try_reserve(&mint, my_sol_lamports, max_position_lamports).await {
+            Reservation::Reserved => {}
+            Reservation::AlreadyActive => return,
+            Reservation::CapitalLimit { committed_sol } => {
+                info!(
+                    "⏸️ Max open capital reached ({:.2}/{:.2} SOL). Skipping {} on {}",
+                    committed_sol, self.config.max_position_sol, label, mint
+                );
+                return;
+            }
+        }
+
+        let curve = match self.get_curve(&mint).await {
+            Some(c) if !c.complete => c,
+            _ => {
+                self.position_manager.release(&mint).await;
+                return;
+            }
+        };
+
+        info!(
+            "⚡ TRIGGERING {}: {} SOL on Mint {} (exits when {} leader(s) sell)",
+            label, self.config.copy_trade_amount_sol, mint, leaders.len()
+        );
+        if self
+            .trade_sender
+            .send(TradeAction::Buy {
+                mint,
+                sol_amount_lamports: my_sol_lamports,
+                slippage_bps: std::cmp::max(self.config.slippage_bps, 1500),
+                curve_state: curve,
+                dev_wallet: None,
+                dev_initial_balance: 0,
+                token_program: Some(token_prog),
+                leaders,
+            })
+            .await
+            .is_err()
+        {
+            self.position_manager.release(&mint).await;
         }
     }
 
@@ -91,6 +164,13 @@ impl YellowstoneStreamer {
             .collect();
 
         let whale_filter = FastPubkeyFilter::new(&target_pubkeys);
+        let signal_pubkeys: Vec<Pubkey> = self
+            .config
+            .signal_wallets
+            .iter()
+            .filter_map(|s| Pubkey::from_str(s).ok())
+            .collect();
+        let signal_filter = FastPubkeyFilter::new(&signal_pubkeys);
 
         info!(
             "🔌 Connecting to Triton Yellowstone gRPC at: {}",
@@ -103,7 +183,7 @@ impl YellowstoneStreamer {
         }
 
         loop {
-            match self.stream_session(&whale_filter).await {
+            match self.stream_session(&whale_filter, &signal_filter, !signal_pubkeys.is_empty()).await {
                 Ok(_) => {
                     warn!("Yellowstone stream closed gracefully, reconnecting in 1s...");
                 }
@@ -115,7 +195,12 @@ impl YellowstoneStreamer {
         }
     }
 
-    async fn stream_session(&self, whale_filter: &FastPubkeyFilter) -> Result<()> {
+    async fn stream_session(
+        &self,
+        whale_filter: &FastPubkeyFilter,
+        signal_filter: &FastPubkeyFilter,
+        signals_enabled: bool,
+    ) -> Result<()> {
         let max_position_lamports = (self.config.max_position_sol * 1e9) as u64;
         let mut builder = GeyserGrpcClient::build_from_shared(self.config.yellowstone_grpc_url.clone())
             .context("Failed to build gRPC client from endpoint URL")?;
@@ -308,6 +393,7 @@ impl YellowstoneStreamer {
 
                     // Check if one of our target whale wallets is involved
                     let matched_whale = whale_filter.matches_any(&account_keys);
+                    let matched_signal = if signals_enabled { signal_filter.matches_any(&account_keys) } else { None };
 
                     let pumpfun_bytes = crate::constants::pumpfun_program_id().to_bytes();
 
@@ -348,121 +434,93 @@ impl YellowstoneStreamer {
 
                         // 1. BUY INSTRUCTION
                         if fast_is_discriminator(data, BUY_DISCRIMINATOR_U64) {
-                            if matched_whale.is_none() {
+                            if matched_whale.is_none() && matched_signal.is_none() {
                                 continue;
                             }
-                            // The buyer (account #6) or the fee payer must be a target whale,
+                            // The buyer (account #6) or the fee payer must be the tracked wallet,
                             // not merely some account referenced elsewhere in the transaction
-                            let buyer_is_whale = ix
-                                .accounts
-                                .get(6)
-                                .and_then(|&i| account_keys.get(i as usize))
-                                .and_then(|k| whale_filter.matches_any(std::slice::from_ref(k)));
-                            let whale = match buyer_is_whale
-                                .or_else(|| account_keys.get(..1).and_then(|k| whale_filter.matches_any(k)))
-                            {
-                                Some(w) => w,
-                                None => continue,
+                            let buyer_key = ix.accounts.get(6).and_then(|&i| account_keys.get(i as usize));
+                            let fee_payer_key = account_keys.get(..1);
+                            let find = |filter: &FastPubkeyFilter| {
+                                buyer_key
+                                    .and_then(|k| filter.matches_any(std::slice::from_ref(k)))
+                                    .or_else(|| fee_payer_key.and_then(|k| filter.matches_any(k)))
                             };
+                            let whale = matched_whale.and_then(|_| find(whale_filter));
+                            let signal = matched_signal.and_then(|_| find(signal_filter));
+                            if whale.is_none() && signal.is_none() {
+                                continue;
+                            }
                             let Some(buy_pod) = PumpFunBuyPod::read_from_raw(data) else { continue };
 
                             // Mint is account index #2 in Buy instruction
                             let Some(&mint_idx) = ix.accounts.get(2) else { continue };
                             let Some(mint_bytes) = account_keys.get(mint_idx as usize) else { continue };
                             let mint = Pubkey::new_from_array(*mint_bytes);
-
-                            // max_sol_cost includes the whale's slippage allowance; price the actual
-                            // token amount on the cached curve when we have it
-                            let estimated_cost = {
-                                let (bonding_curve, _) = crate::constants::derive_bonding_curve(&mint);
-                                let cache = self.curve_cache.read().await;
-                                cache
-                                    .get(&bonding_curve)
-                                    .or_else(|| cache.get(&mint))
-                                    .and_then(|c| {
-                                        let mut curve = *c;
-                                        curve.apply_buy(buy_pod.amount)
-                                    })
-                            };
-                            let whale_sol_spent = estimated_cost
-                                .unwrap_or(buy_pod.max_sol_cost)
-                                .min(buy_pod.max_sol_cost) as f64
-                                / 1e9;
-                            info!(
-                                "🚨 WHALE DETECTED [{}]: Bought {} on Pump.fun for ~{:.4} SOL (max {:.4} SOL)",
-                                whale, mint, whale_sol_spent, buy_pod.max_sol_cost as f64 / 1e9
-                            );
-
-                            if whale_sol_spent < self.config.min_whale_buy_sol {
-                                info!(
-                                    "🛡️ Skipping low-conviction whale buy [{}]: Spent only {:.4} SOL (< {:.2} SOL floor)",
-                                    whale, whale_sol_spent, self.config.min_whale_buy_sol
-                                );
+                            if processed_mints.contains(&mint) {
                                 continue;
                             }
 
-                            if !processed_mints.insert(mint) {
-                                continue;
-                            }
-
-                            let my_sol_lamports = (self.config.copy_trade_amount_sol * 1e9) as u64;
-                            match self.position_manager.try_reserve(&mint, my_sol_lamports, max_position_lamports).await {
-                                Reservation::Reserved => {}
-                                Reservation::AlreadyActive => continue,
-                                Reservation::CapitalLimit { committed_sol } => {
-                                    info!(
-                                        "⏸️ Max open capital reached ({:.2}/{:.2} SOL). Skipping whale copy-trade on {}",
-                                        committed_sol, self.config.max_position_sol, mint
-                                    );
-                                    continue;
-                                }
-                            }
-
-                            let curve = match self.get_curve(&mint).await {
-                                Some(c) if !c.complete => c,
-                                _ => {
-                                    self.position_manager.release(&mint).await;
-                                    continue;
-                                }
-                            };
-
-                            info!(
-                                "⚡ TRIGGERING WHALE COPY-TRADE BUY: {} SOL on Mint {}",
-                                self.config.copy_trade_amount_sol, mint
-                            );
-
-                            let copy_slippage = std::cmp::max(self.config.slippage_bps, 1500);
                             let token_2022 = crate::constants::spl_token_2022_program_id();
                             let spl_token = crate::constants::spl_token_program_id();
-                            let ix_token_prog = ix
+                            let token_prog = ix
                                 .accounts
                                 .get(8)
                                 .and_then(|&i| account_keys.get(i as usize))
                                 .map(|k| Pubkey::new_from_array(*k))
-                                .filter(|p| *p == token_2022 || *p == spl_token);
-                            let token_prog = ix_token_prog.unwrap_or_else(|| {
-                                if account_keys.iter().any(|k| *k == token_2022.to_bytes()) {
-                                    token_2022
-                                } else {
-                                    spl_token
-                                }
-                            });
+                                .filter(|p| *p == token_2022 || *p == spl_token)
+                                .unwrap_or_else(|| {
+                                    if account_keys.iter().any(|k| *k == token_2022.to_bytes()) {
+                                        token_2022
+                                    } else {
+                                        spl_token
+                                    }
+                                });
 
-                            if self
-                                .trade_sender
-                                .send(TradeAction::Buy {
-                                    mint,
-                                    sol_amount_lamports: my_sol_lamports,
-                                    slippage_bps: copy_slippage,
-                                    curve_state: curve,
-                                    dev_wallet: None,
-                                    dev_initial_balance: 0,
-                                    token_program: Some(token_prog),
-                                })
-                                .await
-                                .is_err()
-                            {
-                                self.position_manager.release(&mint).await;
+                            if let Some(whale) = whale {
+                                // max_sol_cost includes the whale's slippage allowance; price the actual
+                                // token amount on the cached curve when we have it
+                                let estimated_cost = {
+                                    let (bonding_curve, _) = crate::constants::derive_bonding_curve(&mint);
+                                    let cache = self.curve_cache.read().await;
+                                    cache
+                                        .get(&bonding_curve)
+                                        .or_else(|| cache.get(&mint))
+                                        .and_then(|c| {
+                                            let mut curve = *c;
+                                            curve.apply_buy(buy_pod.amount)
+                                        })
+                                };
+                                let whale_sol_spent = estimated_cost
+                                    .unwrap_or(buy_pod.max_sol_cost)
+                                    .min(buy_pod.max_sol_cost) as f64
+                                    / 1e9;
+                                info!(
+                                    "🚨 WHALE DETECTED [{}]: Bought {} on Pump.fun for ~{:.4} SOL (max {:.4} SOL)",
+                                    whale, mint, whale_sol_spent, buy_pod.max_sol_cost as f64 / 1e9
+                                );
+
+                                if whale_sol_spent < self.config.min_whale_buy_sol {
+                                    info!(
+                                        "🛡️ Skipping low-conviction whale buy [{}]: Spent only {:.4} SOL (< {:.2} SOL floor)",
+                                        whale, whale_sol_spent, self.config.min_whale_buy_sol
+                                    );
+                                    continue;
+                                }
+
+                                processed_mints.insert(mint);
+                                self.trigger_copy_buy(mint, token_prog, vec![whale], "WHALE COPY-TRADE BUY").await;
+                            } else if let Some(signal_wallet) = signal {
+                                // Fast snipers are a signal, not copied one by one: buy only when
+                                // several of them pile into the same token within the window
+                                if let Some(cluster) = self.record_signal_buy(mint, signal_wallet) {
+                                    info!(
+                                        "📶 SIGNAL CLUSTER on {}: {} signal wallets bought within {}s",
+                                        mint, cluster.len(), self.config.signal_window_secs
+                                    );
+                                    processed_mints.insert(mint);
+                                    self.trigger_copy_buy(mint, token_prog, cluster, "SIGNAL-CLUSTER BUY").await;
+                                }
                             }
                         }
 
@@ -498,6 +556,22 @@ impl YellowstoneStreamer {
                                                     None
                                                 }
                                             }
+                                        };
+
+                                        // Otherwise: did a wallet we copied into this position just sell?
+                                        let dev_dump_pos = match dev_dump_pos {
+                                            Some(pos) => Some(pos),
+                                            None => match self.position_manager.check_leader_exit(&mint, &seller).await {
+                                                Some(pos) => Some(pos),
+                                                None => {
+                                                    let fee_payer = Pubkey::new_from_array(account_keys[0]);
+                                                    if fee_payer != seller {
+                                                        self.position_manager.check_leader_exit(&mint, &fee_payer).await
+                                                    } else {
+                                                        None
+                                                    }
+                                                }
+                                            },
                                         };
 
                                         if let Some(pos) = dev_dump_pos {
@@ -564,6 +638,7 @@ impl YellowstoneStreamer {
                                         let mut dev_bought_sol = 0.0;
                                         let mut dev_tokens: u64 = 0;
                                         let mut whale_bought_sol = 0.0;
+                                        let mut launch_whales: Vec<Pubkey> = Vec::new();
                                         for other_ix in &all_instructions {
                                             if account_keys.get(other_ix.program_id_index) != Some(&pumpfun_bytes)
                                                 || !fast_is_discriminator(other_ix.data, BUY_DISCRIMINATOR_U64)
@@ -591,6 +666,9 @@ impl YellowstoneStreamer {
                                             }
                                             if let Some(w) = buyer.and_then(|k| whale_filter.matches_any(std::slice::from_ref(k))) {
                                                 whale_bought_sol += sol;
+                                                if !launch_whales.contains(&w) {
+                                                    launch_whales.push(w);
+                                                }
                                                 info!("🐋 Whale {} bought {:.4} SOL in create tx of {}", w, sol, mint);
                                             }
                                         }
@@ -656,6 +734,7 @@ impl YellowstoneStreamer {
                                                 dev_wallet: Some(creator),
                                                 dev_initial_balance: dev_tokens,
                                                 token_program: Some(token_prog),
+                                                leaders: launch_whales,
                                             })
                                             .await
                                             .is_err()

@@ -27,6 +27,10 @@ pub struct BotConfig {
     pub min_creator_buy_sol: f64,
     pub min_whale_buy_sol: f64,
     pub target_wallets: Vec<String>,
+    /// Fast wallets used as a group-buy signal (not copied one by one)
+    pub signal_wallets: Vec<String>,
+    pub signal_min_wallets: usize,
+    pub signal_window_secs: u64,
     pub dual_route_rpc: bool,
     pub positions_file: String,
     pub max_curve_cache_entries: usize,
@@ -177,6 +181,20 @@ impl BotConfig {
             .and_then(|v| v.parse().ok())
             .unwrap_or(50_000);
 
+        // Group-buy signal: buy when this many signal wallets buy the same token within the window
+        let signal_wallets: Vec<String> = env::var("SIGNAL_WALLETS")
+            .map(|w| w.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect())
+            .unwrap_or_default();
+        let signal_min_wallets = env::var("SIGNAL_MIN_WALLETS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(2usize)
+            .max(2);
+        let signal_window_secs = env::var("SIGNAL_WINDOW_SECS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(10);
+
         Ok(Self {
             solana_rpc_url,
             yellowstone_grpc_url,
@@ -200,6 +218,9 @@ impl BotConfig {
             min_creator_buy_sol,
             min_whale_buy_sol,
             target_wallets,
+            signal_wallets,
+            signal_min_wallets,
+            signal_window_secs,
             dual_route_rpc,
             positions_file,
             max_curve_cache_entries,

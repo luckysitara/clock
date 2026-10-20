@@ -188,6 +188,7 @@ async fn main() -> Result<()> {
     ));
 
     let (_tx_trades, rx_trades) = mpsc::channel::<TradeAction>(2000);
+    executor.spawn_balance_refresher();
     Arc::clone(&executor).spawn_worker(rx_trades);
 
     let min_profit_lamports = 1_500_000; // 0.0015 SOL minimum clean net profit hurdle

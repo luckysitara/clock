@@ -156,6 +156,7 @@ async fn main() -> Result<()> {
         executor
     });
 
+    executor.spawn_balance_refresher();
     executor.spawn_worker(rx_trades);
 
     // 7. Connect to Triton Yellowstone gRPC and Start Stream Loop

@@ -72,7 +72,14 @@ pub struct ExecutionEngine {
     dual_route_rpc: bool,
     /// Paper trading: simulate instead of sending, and log trades to this file
     paper_log: Option<std::path::PathBuf>,
+    /// Last known wallet balance in lamports (u64::MAX until first fetched)
+    balance_lamports: Arc<std::sync::atomic::AtomicU64>,
 }
+
+/// Rent for a new token account (refunded when it is closed)
+const TOKEN_ACCOUNT_RENT_LAMPORTS: u64 = 2_039_280;
+/// Headroom for network + priority fees on a buy
+const BUY_FEE_HEADROOM_LAMPORTS: u64 = 100_000;
 
 /// Estimated Pump.fun fee per side (protocol + creator) used for paper-trade accounting
 const PAPER_PUMP_FEE_BPS: u64 = 125;
@@ -96,6 +103,7 @@ impl ExecutionEngine {
             rpc_url,
             dual_route_rpc,
             paper_log: None,
+            balance_lamports: Arc::new(std::sync::atomic::AtomicU64::new(u64::MAX)),
             http_client: Client::builder()
                 .timeout(std::time::Duration::from_millis(2500))
                 .build()
@@ -164,6 +172,28 @@ impl ExecutionEngine {
     pub fn with_dry_run(mut self, paper_log: impl Into<std::path::PathBuf>) -> Self {
         self.paper_log = Some(paper_log.into());
         self
+    }
+
+    /// Keep the wallet balance cached (refreshed every 2s) so buys can be checked without an RPC round trip
+    pub fn spawn_balance_refresher(&self) -> tokio::task::JoinHandle<()> {
+        let (client, rpc_url, wallet, balance) =
+            (self.http_client.clone(), self.rpc_url.clone(), self.keypair.pubkey().to_string(), Arc::clone(&self.balance_lamports));
+        tokio::spawn(async move {
+            let payload = serde_json::json!({
+                "jsonrpc": "2.0", "id": 1, "method": "getBalance",
+                "params": [wallet, {"commitment": "processed"}]
+            });
+            loop {
+                if let Ok(resp) = client.post(&rpc_url).json(&payload).send().await {
+                    if let Ok(json) = resp.json::<serde_json::Value>().await {
+                        if let Some(lamports) = json["result"]["value"].as_u64() {
+                            balance.store(lamports, std::sync::atomic::Ordering::Relaxed);
+                        }
+                    }
+                }
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            }
+        })
     }
 
     pub fn is_dry_run(&self) -> bool {
@@ -522,6 +552,20 @@ impl ExecutionEngine {
         let calc = curve_state
             .calculate_buy_output(sol_amount_lamports, slippage_bps)
             .context("Curve calculation failed or curve is complete")?;
+
+        // Skip buys the wallet can't fully pay for (they fail on-chain and still cost fees)
+        let required = calc.max_sol_cost
+            + self.tip_engine.trade_tip(sol_amount_lamports)
+            + TOKEN_ACCOUNT_RENT_LAMPORTS
+            + BUY_FEE_HEADROOM_LAMPORTS;
+        let balance = self.balance_lamports.load(std::sync::atomic::Ordering::Relaxed);
+        if balance != u64::MAX && balance < required {
+            warn!(
+                "💸 Skipping buy of {}: wallet has {:.4} SOL, needs {:.4} SOL (max cost + tip + account rent + fees)",
+                mint, balance as f64 / 1e9, required as f64 / 1e9
+            );
+            return Ok(false);
+        }
 
         let token_prog = token_program.unwrap_or_else(|| {
             crate::constants::spl_token_program_id()

@@ -19,7 +19,7 @@
 - **Atomic Jito MEV Bundles:**
   - Constructs atomic transactions with priority compute budgets and Jito tip transfers, broadcast to 6 regional block engines in parallel.
   - Optional dual-routing (`DUAL_ROUTE_RPC=true`, the default) also sends the same signed transaction through public RPC `sendTransaction` for a higher landing rate. That copy is visible to the public network and can be front-run; set `DUAL_ROUTE_RPC=false` for Jito-only, private submission.
-  - Tip policy: entries and normal exits pay `MIN_TIP_LAMPORTS`; panic exits and sell retries pay `MAX_TIP_LAMPORTS`. (`TipEngine::calculate_optimal_tip` implements an EV-based tip and is used by the backtesters, not by live execution.)
+  - Tip policy: entries and normal exits pay `MIN_TIP_LAMPORTS`, panic exits and sell retries pay `MAX_TIP_LAMPORTS`, each capped at `TIP_MAX_PCT_OF_TRADE` / `TIP_MAX_PANIC_PCT_OF_TRADE` of the trade value so tips can't eat small positions. (`TipEngine::calculate_optimal_tip` implements an EV-based tip and is used by the backtesters, not by live execution.)
 - **Risk Management & Fast Exit Engine:**
   - **Automated Trailing Stop-Loss:** Once a position is up 30%, exits if price drops the configured percentage from its peak (e.g. 15%).
   - **Hard Stop-Loss:** Exits if price falls the configured percentage below entry (e.g. 20%).
@@ -121,7 +121,26 @@ cargo run --release
 | `DEV_DUMP_THRESHOLD_PCT` | Share of the dev's entry balance sold that triggers a panic exit | `0.20` (20%) |
 | `MIN_WHALE_BUY_SOL` | Minimum SOL a target whale must spend (copy-trade, or its own buy inside a launch tx) | `1.0` |
 | `MIN_CREATOR_BUY_SOL` | Minimum dev buy in the create tx before a launch is sniped | `0.20` |
+| `TIP_MAX_PCT_OF_TRADE` | Max Jito tip as a share of trade value (entries, normal exits) | `0.01` (1%) |
+| `TIP_MAX_PANIC_PCT_OF_TRADE` | Max Jito tip as a share of trade value (panic exits, sell retries) | `0.03` (3%) |
+| `DRY_RUN` | Paper trading: simulate buys, track exits on live prices, send nothing | `false` |
+| `PAPER_TRADES_FILE` | Where dry-run trades are logged (JSON lines) | `data/paper_trades.jsonl` |
 | `DUAL_ROUTE_RPC` | Also send transactions via public RPC (`false` = Jito bundles only) | `true` |
 | `POSITIONS_FILE` | Where open-position entry data is persisted | `data/positions.json` |
 | `MAX_CURVE_CACHE_ENTRIES` | Bonding curves kept in memory before the cache is cleared | `50000` |
 | `TARGET_WALLETS` | Comma-separated list of whale wallets (falls back to `data/smart_money_wallets.txt`) | *Configured in .env* |
+
+---
+
+## 🧰 Tools
+
+| Command | What it does |
+| :--- | :--- |
+| `cargo run --release --bin pnl_report [WALLET]` | Real P&L from on-chain history: per-token results, win rate, profit factor, tips, fees, failed-tx reasons |
+| `cargo run --release --bin pnl_report -- --paper` | Summarize dry-run paper trades |
+| `cargo run --release --bin score_wallets` | Rank `TARGET_WALLETS` by their own Pump.fun results; keepers go to `data/smart_money_wallets_scored.txt` |
+| `cargo run --release --bin close_empty_accounts [-- --execute]` | Close empty token accounts to recover their rent (~0.002 SOL each) |
+| `cargo run --release --bin check_position` | Current holdings, sell value and P&L vs. saved entry |
+| `cargo run --release --bin sell_all` | Emergency exit of every Pump.fun position |
+
+**Recommended workflow:** score wallets → set `TARGET_WALLETS` to the keepers → run with `DRY_RUN=true` for ~50 trades → `pnl_report --paper` → go live only if the profit factor stays above ~1.2 after costs.

@@ -161,11 +161,14 @@ async fn stream_window(
     let mut last_print = Instant::now();
 
     while start.elapsed() < window {
-        let msg = match tokio::time::timeout(window.saturating_sub(start.elapsed()), stream.next()).await {
+        // Wait until the window ends, but treat 30s of silence as a dead connection
+        let remaining = window.saturating_sub(start.elapsed());
+        let msg = match tokio::time::timeout(remaining.min(Duration::from_secs(30)), stream.next()).await {
             Ok(Some(Ok(msg))) => msg,
             Ok(Some(Err(e))) => anyhow::bail!("{}", e),
             Ok(None) => anyhow::bail!("stream ended"),
-            Err(_) => return Ok(()),
+            Err(_) if remaining <= Duration::from_secs(30) => return Ok(()),
+            Err(_) => anyhow::bail!("no stream data for 30s"),
         };
         let Some(UpdateOneof::Transaction(update)) = msg.update_oneof else { continue };
         let Some(info) = update.transaction.as_ref() else { continue };

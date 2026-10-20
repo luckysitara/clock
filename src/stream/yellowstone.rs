@@ -39,6 +39,9 @@ struct RawInstructionView<'a> {
     data: &'a [u8],
 }
 
+/// Reconnect when the stream delivers nothing for this long
+const STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(30);
+
 pub struct YellowstoneStreamer {
     config: Arc<BotConfig>,
     curve_cache: Arc<RwLock<HashMap<Pubkey, BondingCurveAccountPod>>>,
@@ -273,7 +276,14 @@ impl YellowstoneStreamer {
 
         info!("🎯 Stream active! Monitoring Processed slot data for Top 20 whales and launches...");
 
-        while let Some(msg_res) = stream.next().await {
+        loop {
+            // Pump.fun never goes quiet for this long; silence means a dead connection
+            // (e.g. a network drop that left the socket open), so reconnect
+            let msg_res = match tokio::time::timeout(STREAM_IDLE_TIMEOUT, stream.next()).await {
+                Ok(Some(m)) => m,
+                Ok(None) => break,
+                Err(_) => anyhow::bail!("no stream data for {}s, connection presumed dead", STREAM_IDLE_TIMEOUT.as_secs()),
+            };
             let msg = match msg_res {
                 Ok(m) => m,
                 Err(e) => {

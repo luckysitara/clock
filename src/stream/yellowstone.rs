@@ -274,7 +274,7 @@ impl YellowstoneStreamer {
             .await
             .context("Failed to open subscribe stream with Triton")?;
 
-        info!("🎯 Stream active! Monitoring Processed slot data for Top 20 whales and launches...");
+        info!("🎯 Stream active! Monitoring Processed slot data for {} target wallets and launches...", self.config.target_wallets.len());
 
         loop {
             // Pump.fun never goes quiet for this long; silence means a dead connection

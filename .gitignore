@@ -27,3 +27,6 @@ logs/
 # Live position state
 data/positions.json
 data/positions.json.tmp
+
+# Git internals (never tracked by git anyway; listed so tools that read .gitignore skip it)
+.git/

@@ -37,7 +37,7 @@ impl BlockhashCache {
     pub fn spawn_updater(&self, rpc_url: String, interval: Duration) -> tokio::task::JoinHandle<()> {
         let entry_clone = Arc::clone(&self.entry);
         tokio::spawn(async move {
-            let client = RpcClient::new(rpc_url.clone());
+            let mut client = RpcClient::new_with_timeout(rpc_url.clone(), Duration::from_secs(10));
             info!("🔄 Blockhash background updater started for RPC: {}", rpc_url);
 
             loop {
@@ -51,7 +51,8 @@ impl BlockhashCache {
                             .as_millis() as u64;
                     }
                     Err(e) => {
-                        error!("⚠️ Failed to fetch recent blockhash: {}", e);
+                        error!("⚠️ Failed to fetch recent blockhash: {}. Recreating RPC client...", e);
+                        client = RpcClient::new_with_timeout(rpc_url.clone(), Duration::from_secs(10));
                     }
                 }
                 tokio::time::sleep(interval).await;

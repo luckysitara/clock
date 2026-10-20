@@ -1,0 +1,3183 @@
+[
+  {
+    "id": 1,
+    "symbol": "LEVERAGE",
+    "name": "Leverage Pad",
+    "mint": "BM2k8mJUbMthHoioykyUm2NjMrXvLBYhoXruwYLpump",
+    "primary_dex": "pumpswap",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 88122153344,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 2000000000,
+        "desc": "Buy 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "symbol": "bukangi",
+    "name": "\ubd80\uce89\uc774 busan shark",
+    "mint": "3iUTyNYW6xKv5kZUjtbrEDTsuJTrSVwvB3bQtxkLpump",
+    "primary_dex": "pumpswap",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 88753514730,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 2000000000,
+        "desc": "Buy 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 8,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "symbol": "XPAD",
+    "name": "XPad",
+    "mint": "FFzTy32bZbPA8zRLbbiWoNzW2emGv86tUxaoqhz1pump",
+    "primary_dex": "pumpswap",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 87908901474,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "symbol": "OMNINU",
+    "name": "Omninu",
+    "mint": "rsE4qbZ6Decdu1stnoHnC7QrNtqjuzuAuD9xnNGpump",
+    "primary_dex": "pumpswap",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 89037093339,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_A"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_B"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "symbol": "INSTA",
+    "name": "insta.fan",
+    "mint": "6UhUkSBc9RBB9gVJcjCWtcQv4t771rQF7bdn2qK7pump",
+    "primary_dex": "pumpswap",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 86692158846,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 8,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "symbol": "BOB",
+    "name": "bob",
+    "mint": "E4vwseNWpkBxzNxyv3msVLCzYHU5SXrj1QWXEycypump",
+    "primary_dex": "pumpswap",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 84164424023,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "symbol": "VAULT",
+    "name": "VaultStrategy",
+    "mint": "7tEsDuij7aj4b2jLUAS5oXcp6B3zWratYVmviS5zpump",
+    "primary_dex": "pumpswap",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 86778353080,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "symbol": "TOBEY",
+    "name": "TOBEY MAGZ",
+    "mint": "FbrMGVE2548HfpMVhYsybmYyUQVHMefMiUSkckyipump",
+    "primary_dex": "pumpswap",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 90562963153,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_B"
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "symbol": "baton",
+    "name": "baton",
+    "mint": "Hg5Ja55T5wESq4vyFoiVCMeHXtGyVA69X2UHq8hgpump",
+    "primary_dex": "pumpswap",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 83651740846,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 2000000000,
+        "desc": "Buy 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 2000000000,
+        "desc": "Buy 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "symbol": "Holdoween",
+    "name": "Holdoween",
+    "mint": "BxftAowY2dVa2h9KMqDTPk4oMxzU9k6uVbZuoorXpump",
+    "primary_dex": "pumpswap",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 88423573338,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 2000000000,
+        "desc": "Buy 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_B"
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "symbol": "BOARD",
+    "name": "Call The Board",
+    "mint": "4Sbqpaa1pvn7RibuKc6caNJ77tjcQC9WuxHRnzdSpump",
+    "primary_dex": "pumpswap",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 85706737077,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_B"
+      }
+    ]
+  },
+  {
+    "id": 12,
+    "symbol": "SCRAPS",
+    "name": "SCRAPS ON SOLANA",
+    "mint": "64ieTFXDP7esG3ahCoMRgEqtt8gTM5rXdxvXrfY6pump",
+    "primary_dex": "pumpfun",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 85745423391,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 2000000000,
+        "desc": "Buy 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 8,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 2000000000,
+        "desc": "Buy 2.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "symbol": "OTC",
+    "name": "OTC",
+    "mint": "MukLDtJ8Cx9DxLbeyLRSWPSposTMWuwHANbuaudpump",
+    "primary_dex": "meteora",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 87558611463,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_A"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_B"
+      }
+    ]
+  },
+  {
+    "id": 14,
+    "symbol": "PUMP",
+    "name": "PUMPKIN HEAD \ud83c\udf83",
+    "mint": "5U2xu35J4LmURGsxCPZi1ZWSBRkKExcNKkmv5Zr8pump",
+    "primary_dex": "pumpfun",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 88431204942,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 15,
+    "symbol": "Staccana",
+    "name": "Solana Fork Staccana",
+    "mint": "73edX6xoGY4v5y2hzuKdrUbJXLntqgmo74au1Ki1pump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 87140823215,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      }
+    ]
+  },
+  {
+    "id": 16,
+    "symbol": "STORE",
+    "name": "Solana Spaces",
+    "mint": "FLJYGHpCCcfYUdzhcfHSeSd2peb5SMajNWaCsRnhpump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 84161436771,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 17,
+    "symbol": "SSE",
+    "name": "Solana Social Explorer",
+    "mint": "H4phNbsqjV5rqk8u6FUACTLB6rNZRTAPGnBb8KXJpump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 90820071429,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 18,
+    "symbol": "$CrepSol",
+    "name": "Crepe on Solana",
+    "mint": "HW2B2wvyEir3iqvYbYqbHWyR7rA6DqCR3WQSy4USpump",
+    "primary_dex": "pumpswap",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 87310811895,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 8,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 19,
+    "symbol": "$MAXBTC",
+    "name": "Max Bitcoin Solana",
+    "mint": "2mzqMhShWKobxdoQQ1b8YfNcER9LLoZWGn3WufGUpump",
+    "primary_dex": "pumpfun",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 85166515929,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 20,
+    "symbol": "SOLANASLOTH",
+    "name": "Solana the Sloth",
+    "mint": "CE2wyDBxxi4g9WZ7tgjtfXhTJyEWBwkf6oywqNECpump",
+    "primary_dex": "pumpswap",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 81990223413,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 2000000000,
+        "desc": "Buy 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 8,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_B"
+      }
+    ]
+  },
+  {
+    "id": 21,
+    "symbol": "3G8FM",
+    "name": "Solana Token 3g8f",
+    "mint": "3g8fMth63zLVsSZsDCkbaqnRLDAx2uyhbtoSPQ2UNVJ2",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 88941493482,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_B"
+      }
+    ]
+  },
+  {
+    "id": 22,
+    "symbol": "F9UDY",
+    "name": "Solana Token F9Ud",
+    "mint": "F9UdyKxWakfGhpgvMNZQJdAAWWKGs96LJTApWE9Q7RU8",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 86342879540,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 2000000000,
+        "desc": "Buy 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_A"
+      },
+      {
+        "step": 8,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      }
+    ]
+  },
+  {
+    "id": 23,
+    "symbol": "DGP1O",
+    "name": "Solana Token DGp1",
+    "mint": "DGp1oDcnbrPpVxiGXHV43ga8MSJkYLhEv71x2Uh1pump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 90638596472,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 2000000000,
+        "desc": "Buy 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_B"
+      }
+    ]
+  },
+  {
+    "id": 24,
+    "symbol": "7PYDM",
+    "name": "Solana Token 7pYd",
+    "mint": "7pYdm6bXhVf1J9Qv1fyWB9nkxdnG5RhFKA9yjW1Dpump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 86255910619,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 8,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 25,
+    "symbol": "AUD3R",
+    "name": "Solana Token AUd3",
+    "mint": "AUd3rULBqpeUMUcoguBc8afg68g2hjj7SegB9AJsKCyQ",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 82390330209,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 26,
+    "symbol": "8ENCY",
+    "name": "Solana Token 8Enc",
+    "mint": "8Encyq4pQboDXdEsBQFdAihjY43Hdu3bPe4jMv5totin",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 85479886495,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 27,
+    "symbol": "DN8JC",
+    "name": "Solana Token Dn8j",
+    "mint": "Dn8jCNoju8dwKNUp6aG1b7RPSLZqPs8eiZzYctR3etmQ",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 85028521345,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 8,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 28,
+    "symbol": "J5PBV",
+    "name": "Solana Token J5PB",
+    "mint": "J5PBVgW6s7PF8PDfsGD9NieUK49bziHpfJ5tjptWpump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 81797709527,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 29,
+    "symbol": "8TIMK",
+    "name": "Solana Token 8TiM",
+    "mint": "8TiMkgvsrat9tM2esko8zVTt99LZLpefUM4SnZaziXaQ",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 91267121626,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 8,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 30,
+    "symbol": "EHSN6",
+    "name": "Solana Token EHSN",
+    "mint": "EHSN6eiuoh1J5jAVrW4dp8gnUHbJ3qbs8FqTLx2ziRiF",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 88579442199,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 31,
+    "symbol": "AHQAL",
+    "name": "Solana Token AHqa",
+    "mint": "AHqaLA2fUChB25o1V7R7mVpGuvCACdZUHLtNsfQhpump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 86289341345,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      }
+    ]
+  },
+  {
+    "id": 32,
+    "symbol": "7YBFJ",
+    "name": "Solana Token 7Ybf",
+    "mint": "7YbfJBJ27qEnV7b2KaoDbuJM831zdTz9BYdAzFPppump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 87412466375,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 2000000000,
+        "desc": "Buy 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 8,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 33,
+    "symbol": "HX9MY",
+    "name": "Solana Token Hx9M",
+    "mint": "Hx9MYwPJ4iKLdEGQRfBMegdBBKPKUsGuGB2zCMZ2LAYR",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 84601202929,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_A"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 8,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 34,
+    "symbol": "BUY5B",
+    "name": "Solana Token Buy5",
+    "mint": "Buy5B5kdTaAXZoQVScyMCbqHg5ge8XRaJ9XXBz3Npump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 86951296064,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 2000000000,
+        "desc": "Buy 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 2000000000,
+        "desc": "Buy 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 35,
+    "symbol": "AHGY1",
+    "name": "Solana Token aHGY",
+    "mint": "aHGY1e7fjP2tACPcod6xfM6neyi7wmPHFFJTZab7MYi",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 83480509437,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 2000000000,
+        "desc": "Buy 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 36,
+    "symbol": "4LYOS",
+    "name": "Solana Token 4LYo",
+    "mint": "4LYoSAkDAkR1BnEcEg61nFwsmXT1mk7aDWBdpRV39has",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 89397323142,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 37,
+    "symbol": "8HPLZ",
+    "name": "Solana Token 8hPL",
+    "mint": "8hPLZAZQ24vEebBzhNac8gPteyKDyRagiiJuAzjGpump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 82365661662,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_B"
+      }
+    ]
+  },
+  {
+    "id": 38,
+    "symbol": "9UTRC",
+    "name": "Solana Token 9utR",
+    "mint": "9utRCv9Jvmm99koCJBHnLfehDrsLqMCf7BDkNXa7pump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 91123418276,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 8,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 39,
+    "symbol": "5YFBL",
+    "name": "Solana Token 5YfB",
+    "mint": "5YfBLGhU7k5YDcfMUjNmftv7crbZCHoh2shScZVXnbKo",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 87757879137,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 40,
+    "symbol": "E5RYH",
+    "name": "Solana Token E5ry",
+    "mint": "E5ryHkjHJ6o7o1YR3mxLbifd1m4DCchh9QizArYjpump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 83451189301,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 2000000000,
+        "desc": "Buy 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 8,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_B"
+      }
+    ]
+  },
+  {
+    "id": 41,
+    "symbol": "66ZXR",
+    "name": "Solana Token 66ZX",
+    "mint": "66ZXRfHeigbBWR7mh8FUWKvcL5V6Vw2DBZfns3xuQjcG",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 88308135942,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 8,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 42,
+    "symbol": "CFYE7",
+    "name": "Solana Token CFye",
+    "mint": "CFye7D3Vfw7eM4K8QjNpZWzwjpFWtzgDbHhXNgcPWaew",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 86306768520,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 3000000000,
+        "desc": "Buy 3.0 SOL on POOL_B"
+      }
+    ]
+  },
+  {
+    "id": 43,
+    "symbol": "9WK8X",
+    "name": "Solana Token 9wk8",
+    "mint": "9wk8xngMCkvraqg3nrPWrxxGKF33XMRz89MAV75epump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 90413074731,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 12000000000,
+        "desc": "Sell 12.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 44,
+    "symbol": "8ZCMW",
+    "name": "Solana Boosted 8ZCm",
+    "mint": "8ZCmwpW3MtC5UpNcZf7U4HMvRNTo71syU11BDiAFpump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 83524254211,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 2000000000,
+        "desc": "Buy 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 45,
+    "symbol": "CMCHV",
+    "name": "Solana Boosted CmCH",
+    "mint": "CmCHvr99aXrLDQB7jAtFtsBwg3DnXqq4spcTEMt7pump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 90470943196,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 8,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 46,
+    "symbol": "HMYD9",
+    "name": "Solana Boosted HMYd",
+    "mint": "HMYd9tosnUXuNHmq7pXmoePRVBLBBjA3JBfydq6upump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 82297891621,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 18000000000,
+        "desc": "Buy 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_B"
+      }
+    ]
+  },
+  {
+    "id": 47,
+    "symbol": "9S6TP",
+    "name": "Solana Boosted 9s6t",
+    "mint": "9s6tPxbG3CGJQK1nD1SnwrmxWbYkm8jYaQ8c9vrApump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 83385707421,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_A"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 5000000000,
+        "desc": "Buy 5.0 SOL on POOL_B"
+      },
+      {
+        "step": 8,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_A"
+      }
+    ]
+  },
+  {
+    "id": 48,
+    "symbol": "CPGBV",
+    "name": "Solana Boosted CPgB",
+    "mint": "CPgBvNBjmDHL6bvKDyoA8PqSgo6LUMpmk1M8yD9Gpump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 82687863327,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 7,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 3000000000,
+        "desc": "Sell 3.0 SOL on POOL_A"
+      },
+      {
+        "step": 8,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_B"
+      }
+    ]
+  },
+  {
+    "id": 49,
+    "symbol": "7FXXZ",
+    "name": "Solana Boosted 7fxx",
+    "mint": "7fxxzRh3Sotcto3qduvjFv6jyR3doPRd8vpDeQiUpump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 89306888702,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 18000000000,
+        "desc": "Sell 18.0 SOL on POOL_B"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 2000000000,
+        "desc": "Sell 2.0 SOL on POOL_B"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 8000000000,
+        "desc": "Buy 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_A"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 12000000000,
+        "desc": "Buy 12.0 SOL on POOL_B"
+      }
+    ]
+  },
+  {
+    "id": 50,
+    "symbol": "4SN5E",
+    "name": "Solana Boosted 4sN5",
+    "mint": "4sN5ek6KwNH39pgAusxz29YtcRBqvWH9baCUnP4cpump",
+    "primary_dex": "raydium",
+    "pool_a_name": "Pump.fun Curve",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_name": "Raydium AMM",
+    "pool_b_sol_reserves": 90917567139,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trades": [
+      {
+        "step": 1,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_A"
+      },
+      {
+        "step": 2,
+        "pool_target": "pool_b",
+        "is_buy": true,
+        "amount_lamports": 25000000000,
+        "desc": "Buy 25.0 SOL on POOL_B"
+      },
+      {
+        "step": 3,
+        "pool_target": "pool_a",
+        "is_buy": true,
+        "amount_lamports": 2000000000,
+        "desc": "Buy 2.0 SOL on POOL_A"
+      },
+      {
+        "step": 4,
+        "pool_target": "pool_a",
+        "is_buy": false,
+        "amount_lamports": 25000000000,
+        "desc": "Sell 25.0 SOL on POOL_A"
+      },
+      {
+        "step": 5,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 8000000000,
+        "desc": "Sell 8.0 SOL on POOL_B"
+      },
+      {
+        "step": 6,
+        "pool_target": "pool_b",
+        "is_buy": false,
+        "amount_lamports": 5000000000,
+        "desc": "Sell 5.0 SOL on POOL_B"
+      }
+    ]
+  }
+]

@@ -52,9 +52,36 @@ path = "src/bin/sell_all.rs"
 name = "check_position"
 path = "src/bin/check_position.rs"
 
+[[bin]]
+name = "test_arb"
+path = "src/bin/test_arb.rs"
+
+[[bin]]
+name = "backtest_arb"
+path = "src/bin/backtest_arb.rs"
+
+[[bin]]
+name = "live_arb"
+path = "src/bin/live_arb.rs"
+
+[[bin]]
+name = "trade_arb"
+path = "src/bin/trade_arb.rs"
+
+[[bin]]
+name = "backtest_strategy1"
+path = "src/bin/backtest_strategy1.rs"
+
+[[bin]]
+name = "trade_hybrid"
+path = "src/bin/trade_hybrid.rs"
+
 [lib]
 name = "clockit"
 path = "src/lib.rs"
+
+
+
 
 [profile.release]
 opt-level = 3

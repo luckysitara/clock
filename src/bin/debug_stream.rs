@@ -63,16 +63,43 @@ async fn main() -> Result<()> {
 
     let mut disc_counts: HashMap<u64, usize> = HashMap::new();
 
-    while start.elapsed() < Duration::from_secs(5) {
+    while start.elapsed() < Duration::from_secs(20) {
         if let Some(Ok(msg)) = stream.next().await {
             if let Some(UpdateOneof::Transaction(tx_info)) = msg.update_oneof {
                 total_tx += 1;
                 if let Some(tx) = tx_info.transaction.as_ref().and_then(|t| t.transaction.as_ref()) {
                     if let Some(msg_data) = tx.message.as_ref() {
-                        for ix in &msg_data.instructions {
-                            if ix.data.len() >= 8 {
-                                let disc = u64::from_le_bytes(ix.data[0..8].try_into().unwrap());
-                                *disc_counts.entry(disc).or_insert(0) += 1;
+                        let mut all_ixs: Vec<(&Vec<u8>, &Vec<u8>)> = msg_data.instructions.iter().map(|i| (&i.data, &i.accounts)).collect();
+                        if let Some(meta) = tx_info.transaction.as_ref().and_then(|t| t.meta.as_ref()) {
+                            for inner_set in &meta.inner_instructions {
+                                for inner in &inner_set.instructions {
+                                    all_ixs.push((&inner.data, &inner.accounts));
+                                }
+                            }
+                        }
+                        for (data, accounts) in all_ixs {
+                            if data.len() >= 8 {
+                                let disc = u64::from_le_bytes(data[0..8].try_into().unwrap());
+                                if disc == BUY_DISCRIMINATOR_U64 {
+                                    println!("\n🎯 LIVE PUMP.FUN BUY INSTRUCTION FOUND!");
+                                    println!("Data len: {} bytes: {:?}", data.len(), data);
+                                    println!("Accounts count: {}", accounts.len());
+                                    let mut all_keys: Vec<Vec<u8>> = msg_data.account_keys.clone();
+                                    if let Some(meta) = tx_info.transaction.as_ref().and_then(|t| t.meta.as_ref()) {
+                                        all_keys.extend(meta.loaded_writable_addresses.iter().cloned());
+                                        all_keys.extend(meta.loaded_readonly_addresses.iter().cloned());
+                                    }
+                                    for (idx, acc_idx) in accounts.iter().enumerate() {
+                                        if (*acc_idx as usize) < all_keys.len() {
+                                            let pubkey_bytes = &all_keys[*acc_idx as usize];
+                                            let pk = solana_sdk::pubkey::Pubkey::new_from_array(pubkey_bytes.as_slice().try_into().unwrap());
+                                            println!("  [{}] Account idx {}: {}", idx, acc_idx, pk);
+                                        } else {
+                                            println!("  [{}] Account idx {}: <out of bounds>", idx, acc_idx);
+                                        }
+                                    }
+                                    return Ok(());
+                                }
                             }
                         }
                     }

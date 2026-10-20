@@ -175,6 +175,12 @@ impl PositionManager {
         lock.values().map(|p| p.sol_invested_lamports as f64 / 1e9).sum()
     }
 
+    /// Check total lamports currently deployed in open positions
+    pub async fn total_invested_lamports(&self) -> u64 {
+        let lock = self.positions.read().await;
+        lock.values().map(|p| p.sol_invested_lamports).sum()
+    }
+
     /// Check if we already have an active position for a mint
     pub async fn has_position(&self, mint: &Pubkey) -> bool {
         let lock = self.positions.read().await;

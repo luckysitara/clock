@@ -41,3 +41,4 @@ data/top_wallets.json
 data/top_wallets_winrate.json
 data/top_wallets_winrate.txt
 data/copy_candidates.txt
+data/top_wallets_run*.json

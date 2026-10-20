@@ -37,3 +37,6 @@ data/paper_positions.json
 data/paper_positions.json.tmp
 data/wallet_scores.json
 data/smart_money_wallets_scored.txt
+data/top_wallets.json
+data/top_wallets_winrate.json
+data/top_wallets_winrate.txt

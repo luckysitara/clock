@@ -27,9 +27,18 @@ pub struct MintStats {
     pub tokens_sold: i128,
     pub first_slot: u64,
     pub last_slot: u64,
+    /// Unix time of the first and last trade in this token
+    pub first_time: i64,
+    pub last_time: i64,
+    /// Bought in the same transaction that created the token (dev / bundled launch)
+    pub bought_in_create_tx: bool,
 }
 
 impl MintStats {
+    /// Seconds between the first and last trade in this token
+    pub fn hold_secs(&self) -> i64 {
+        (self.last_time - self.first_time).max(0)
+    }
     pub fn pnl(&self) -> f64 {
         self.sol_received - self.sol_spent
     }
@@ -224,6 +233,24 @@ fn venue(programs: &HashSet<String>) -> &'static str {
     }
 }
 
+/// Whether the tx contains a Pump.fun create instruction (top-level or inner)
+fn has_pump_create(tx: &Value) -> bool {
+    let is_create = |ix: &Value| {
+        ix["programId"] == PUMPFUN_PROGRAM
+            && ix["data"]
+                .as_str()
+                .and_then(|d| bs58::decode(d).into_vec().ok())
+                .is_some_and(|bytes| bytes.len() >= 8 && bytes[..8] == crate::constants::CREATE_DISCRIMINATOR_BYTES)
+    };
+    tx["transaction"]["message"]["instructions"].as_array().into_iter().flatten().any(is_create)
+        || tx["meta"]["innerInstructions"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .flat_map(|inner| inner["instructions"].as_array().into_iter().flatten())
+            .any(is_create)
+}
+
 /// Readable form of a failed tx's error, e.g. "ix 3: Custom 6003"
 fn describe_error(err: &Value) -> String {
     if let Some(ie) = err.get("InstructionError").and_then(|v| v.as_array()) {
@@ -333,17 +360,27 @@ pub async fn analyze_wallet(
 
         if deltas.len() == 1 {
             let (mint, token_delta) = deltas.into_iter().next().unwrap();
+            let block_time = tx["blockTime"].as_i64().unwrap_or(0);
             let stats = report.mints.entry(mint.clone()).or_insert_with(|| MintStats {
                 mint,
                 first_slot: slot,
+                first_time: block_time,
+                last_time: block_time,
                 ..Default::default()
             });
+            if block_time > 0 {
+                stats.first_time = if stats.first_time == 0 { block_time } else { stats.first_time.min(block_time) };
+                stats.last_time = stats.last_time.max(block_time);
+            }
             if stats.venue.is_empty() || stats.venue == "other" {
                 stats.venue = venue(&programs).to_string();
             }
             stats.first_slot = stats.first_slot.min(slot);
             stats.last_slot = stats.last_slot.max(slot);
             if token_delta > 0 {
+                if has_pump_create(&tx) {
+                    stats.bought_in_create_tx = true;
+                }
                 stats.buys += 1;
                 stats.tokens_bought += token_delta;
                 stats.sol_spent += -delta;

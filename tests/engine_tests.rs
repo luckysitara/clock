@@ -414,3 +414,36 @@ fn test_tip_caps_scale_with_trade_size() {
     // Never below Jito's minimum
     assert_eq!(tips.trade_tip(0), JITO_MIN_TIP_LAMPORTS);
 }
+
+// Account layouts copied from live mainnet Pump.fun trades: a buy is 18 accounts and a sell 16,
+// both ending with the read-only bonding-curve-v2 PDA and a writable buyback fee recipient.
+// Leaving bonding-curve-v2 out fails with InvalidBondingCurveV2 (6074).
+#[test]
+fn pump_instruction_layouts_match_mainnet() {
+    use clockit::{constants::BUYBACK_FEE_RECIPIENTS, engine::instruction_builder::InstructionBuilder};
+    use solana_sdk::pubkey::Pubkey;
+    use std::str::FromStr;
+
+    let pk = |s: &str| Pubkey::from_str(s).unwrap();
+    let mint = pk("CDcf7DxQ4Ygk7W6bNQw1oSC5fFD6AQw2dGdaL62apump");
+    let user = pk("s7epdqiFrL3jiPKx8eM6JEzJ2JbUpJA6kgCqDF1FfvQ");
+    let token_2022 = pk("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
+    let v2 = pk("65NK2gpXoEnYRY7aG77NA74vva4A9tWGeHX25XkwWjtd");
+    let is_buyback = |p: &Pubkey| BUYBACK_FEE_RECIPIENTS.iter().any(|r| pk(r) == *p);
+
+    let buy = InstructionBuilder::build_buy_instruction(&user, &mint, &user, 1, 1, &token_2022);
+    assert_eq!(buy.accounts.len(), 18);
+    assert_eq!(buy.accounts[13].pubkey, pk("CAFD53iqYmnn7uuZwdwchszeSbad32QiEoCAG8E8E6Vc"));
+    assert_eq!(buy.accounts[14].pubkey, pk("8Wf5TiAheLUqBrKXeYg2JtAFFMWtKdG2BSFgqUcPVwTt"));
+    assert_eq!(buy.accounts[16].pubkey, v2);
+    assert!(!buy.accounts[16].is_writable);
+    assert!(is_buyback(&buy.accounts[17].pubkey) && buy.accounts[17].is_writable);
+
+    let sell = InstructionBuilder::build_sell_instruction(&user, &mint, &user, 1, 0, &token_2022);
+    assert_eq!(sell.accounts.len(), 16);
+    assert_eq!(sell.accounts[9].pubkey, token_2022);
+    assert_eq!(sell.accounts[12].pubkey, pk("8Wf5TiAheLUqBrKXeYg2JtAFFMWtKdG2BSFgqUcPVwTt"));
+    assert_eq!(sell.accounts[14].pubkey, v2);
+    assert!(!sell.accounts[14].is_writable);
+    assert!(is_buyback(&sell.accounts[15].pubkey) && sell.accounts[15].is_writable);
+}

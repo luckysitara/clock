@@ -1,6 +1,7 @@
 use crate::constants::{
     associated_token_program_id, derive_associated_bonding_curve, derive_associated_user_token,
-    derive_bonding_curve, derive_creator_vault, derive_fee_config,
+    derive_bonding_curve, derive_bonding_curve_v2, derive_creator_vault, derive_fee_config,
+    get_random_buyback_fee_recipient,
     pump_fee_program_id,
     system_program_id, BUY_DISCRIMINATOR_BYTES, PUMPFUN_EVENT_AUTHORITY, PUMPFUN_FEE_RECIPIENT,
     PUMPFUN_GLOBAL, PUMPFUN_PROGRAM, SELL_DISCRIMINATOR_BYTES,
@@ -79,8 +80,8 @@ impl InstructionBuilder {
 
         let (global_volume_accumulator, _) = Pubkey::find_program_address(&[b"global_volume_accumulator"], &pump_program);
         let (user_volume_accumulator, _) = Pubkey::find_program_address(&[b"user_volume_accumulator", user.as_ref()], &pump_program);
-        let breaking_fee_recipient = Pubkey::from_str("3nAttfPWAW2dC3W9EfzJ5Ug7ebWU9Xpwq3J6qcK3PvSu").unwrap();
-        let breaking_fee_account = Pubkey::from_str("5YxQFdt3Tr9zJLvkFccqXVUwhdTWJQc1fFg2YPbxvxeD").unwrap();
+        let (bonding_curve_v2, _) = derive_bonding_curve_v2(mint);
+        let buyback_fee_recipient = get_random_buyback_fee_recipient();
 
         let mut data = Vec::with_capacity(25);
         data.extend_from_slice(&BUY_DISCRIMINATOR_BYTES);
@@ -105,14 +106,14 @@ impl InstructionBuilder {
             AccountMeta::new(user_volume_accumulator, false),
             AccountMeta::new_readonly(fee_config, false),
             AccountMeta::new_readonly(protocol_fee_program, false),
-            AccountMeta::new_readonly(breaking_fee_recipient, false),
-            AccountMeta::new(breaking_fee_account, false),
+            AccountMeta::new_readonly(bonding_curve_v2, false),
+            AccountMeta::new(buyback_fee_recipient, false),
         ];
 
         Instruction::new_with_bytes(pump_program, &data, accounts)
     }
 
-    /// Build Pump.fun Sell Instruction (18 accounts layout)
+    /// Build Pump.fun Sell Instruction (16 accounts; no volume accumulators)
     pub fn build_sell_instruction(
         user: &Pubkey,
         mint: &Pubkey,
@@ -134,10 +135,8 @@ impl InstructionBuilder {
         let (creator_vault, _) = derive_creator_vault(creator);
         let (fee_config, _) = derive_fee_config();
 
-        let (global_volume_accumulator, _) = Pubkey::find_program_address(&[b"global_volume_accumulator"], &pump_program);
-        let (user_volume_accumulator, _) = Pubkey::find_program_address(&[b"user_volume_accumulator", user.as_ref()], &pump_program);
-        let breaking_fee_recipient = Pubkey::from_str("3nAttfPWAW2dC3W9EfzJ5Ug7ebWU9Xpwq3J6qcK3PvSu").unwrap();
-        let breaking_fee_account = Pubkey::from_str("5YxQFdt3Tr9zJLvkFccqXVUwhdTWJQc1fFg2YPbxvxeD").unwrap();
+        let (bonding_curve_v2, _) = derive_bonding_curve_v2(mint);
+        let buyback_fee_recipient = get_random_buyback_fee_recipient();
 
         let mut data = Vec::with_capacity(24);
         data.extend_from_slice(&SELL_DISCRIMINATOR_BYTES);
@@ -157,12 +156,10 @@ impl InstructionBuilder {
             AccountMeta::new_readonly(*token_program, false),
             AccountMeta::new_readonly(event_authority, false),
             AccountMeta::new_readonly(pump_program, false),
-            AccountMeta::new(global_volume_accumulator, false),
-            AccountMeta::new(user_volume_accumulator, false),
             AccountMeta::new_readonly(fee_config, false),
             AccountMeta::new_readonly(protocol_fee_program, false),
-            AccountMeta::new_readonly(breaking_fee_recipient, false),
-            AccountMeta::new(breaking_fee_account, false),
+            AccountMeta::new_readonly(bonding_curve_v2, false),
+            AccountMeta::new(buyback_fee_recipient, false),
         ];
 
         Instruction::new_with_bytes(pump_program, &data, accounts)

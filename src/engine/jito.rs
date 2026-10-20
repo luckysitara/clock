@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
-use log::{debug, error, info};
+use base64::Engine;
+use log::{info, warn};
 use reqwest::Client;
 use serde_json::json;
 use solana_sdk::{
@@ -28,6 +29,7 @@ pub struct JitoClient {
     client: Client,
     block_engine_url: String,
     tip_wallet_index: AtomicUsize,
+    last_send: std::sync::Arc<tokio::sync::Mutex<std::time::Instant>>,
 }
 
 impl JitoClient {
@@ -42,13 +44,16 @@ impl JitoClient {
             client,
             block_engine_url,
             tip_wallet_index: AtomicUsize::new(0),
+            last_send: std::sync::Arc::new(tokio::sync::Mutex::new(
+                std::time::Instant::now() - std::time::Duration::from_secs(5),
+            )),
         }
     }
 
-    /// Keeps HTTP connections hot and open to all regional block engines
+    /// Keeps HTTP connections hot and open to primary block engine
     pub fn spawn_prewarmer(&self) -> tokio::task::JoinHandle<()> {
         let client = self.client.clone();
-        let endpoints: Vec<String> = JITO_REGIONAL_ENDPOINTS.iter().map(|s| s.to_string()).collect();
+        let ep = self.block_engine_url.clone();
         tokio::spawn(async move {
             let payload = json!({
                 "jsonrpc": "2.0",
@@ -57,10 +62,8 @@ impl JitoClient {
                 "params": []
             });
             loop {
-                for ep in &endpoints {
-                    let _ = client.post(ep).json(&payload).send().await;
-                }
-                tokio::time::sleep(std::time::Duration::from_secs(15)).await;
+                let _ = client.post(&ep).json(&payload).send().await;
+                tokio::time::sleep(std::time::Duration::from_secs(45)).await;
             }
         })
     }
@@ -87,70 +90,73 @@ impl JitoClient {
         Transaction::new(&[payer], message, recent_blockhash)
     }
 
-    /// Send bundle to Jito Block Engine in parallel across all regional relayers with instant first-response return
+    /// Send bundle to Jito Block Engine adhering to strict rate limits
     pub async fn send_bundle(&self, tx: &Transaction) -> Result<String> {
+        // Enforce strict 1,200ms spacing between bundle dispatches (Jito limit: 1 req/sec)
+        {
+            let mut last = self.last_send.lock().await;
+            let elapsed = last.elapsed();
+            if elapsed < std::time::Duration::from_millis(1200) {
+                let wait = std::time::Duration::from_millis(1200) - elapsed;
+                tokio::time::sleep(wait).await;
+            }
+            *last = std::time::Instant::now();
+        }
+
         let serialized = bincode::serialize(tx).context("Failed to serialize transaction")?;
-        let base58_tx = bs58::encode(serialized).into_string();
+        info!("📦 Jito bundle transaction size: {} bytes (MTU limit: 1232 bytes)", serialized.len());
+        let base64_tx = base64::prelude::BASE64_STANDARD.encode(&serialized);
 
         let payload = json!({
             "jsonrpc": "2.0",
             "id": 1,
             "method": "sendBundle",
-            "params": [[base58_tx]]
+            "params": [[base64_tx], { "encoding": "base64" }]
         });
 
-        // Collect all target endpoints including primary block_engine_url
-        let mut endpoints = vec![self.block_engine_url.as_str()];
-        for &ep in JITO_REGIONAL_ENDPOINTS {
-            if ep != self.block_engine_url.as_str() {
-                endpoints.push(ep);
+        // 1. Dispatch to primary block engine endpoint
+        let res = self.client.post(&self.block_engine_url).json(&payload).send().await;
+        match res {
+            Ok(resp) => {
+                let status = resp.status();
+                let body = resp.text().await.unwrap_or_default();
+                if status.is_success() {
+                    info!("✅ Jito bundle broadcast confirmed: {}", body);
+                    return Ok(body);
+                } else if status.as_u16() == 429 {
+                    warn!("⚠️ Jito 429 Rate Limit from {}. Backing off...", self.block_engine_url);
+                    anyhow::bail!("Jito rate limit 429 from primary: {}", body);
+                } else {
+                    warn!("Primary Jito error ({}): {}. Trying regional backup...", status, body);
+                }
+            }
+            Err(e) => {
+                warn!("Primary Jito network error: {}. Trying regional backup...", e);
             }
         }
 
-        let (tx_res, mut rx_res) = tokio::sync::mpsc::channel(endpoints.len());
-
-        for &ep in &endpoints {
-            let client = self.client.clone();
-            let payload = payload.clone();
-            let ep_str = ep.to_string();
-            let tx_chan = tx_res.clone();
-            tokio::spawn(async move {
-                let res = client.post(&ep_str).json(&payload).send().await;
-                let _ = tx_chan.send((ep_str, res)).await;
-            });
-        }
-        drop(tx_res);
-
-        let mut successful_body: Option<String> = None;
-        let mut last_err = String::new();
-
-        while let Some((ep, res)) = rx_res.recv().await {
-            match res {
-                Ok(resp) => {
-                    let status = resp.status();
-                    let body = resp.text().await.unwrap_or_default();
-                    if status.is_success() {
-                        debug!("✅ Accepted by {}", ep);
-                        if successful_body.is_none() {
-                            successful_body = Some(body);
-                            break; // Return immediately on first regional response!
-                        }
-                    } else {
-                        last_err = format!("HTTP {} from {}: {}", status, ep, body);
-                    }
-                }
-                Err(e) => {
-                    last_err = format!("Req error from {}: {}", ep, e);
-                }
-            }
-        }
-
-        if let Some(body) = successful_body {
-            info!("✅ Jito bundle broadcast confirmed: {}", body);
-            Ok(body)
+        // 2. Single backup endpoint (Frankfurt or Amsterdam)
+        let backup_url = if self.block_engine_url.contains("amsterdam") {
+            "https://frankfurt.mainnet.block-engine.jito.wtf/api/v1/bundles"
         } else {
-            error!("❌ All Jito block engines rejected bundle. Last err: {}", last_err);
-            anyhow::bail!("All Jito block engines rejected bundle: {}", last_err)
+            "https://amsterdam.mainnet.block-engine.jito.wtf/api/v1/bundles"
+        };
+
+        let backup_res = self.client.post(backup_url).json(&payload).send().await;
+        match backup_res {
+            Ok(resp) => {
+                let status = resp.status();
+                let body = resp.text().await.unwrap_or_default();
+                if status.is_success() {
+                    info!("✅ Jito bundle confirmed via backup: {}", body);
+                    return Ok(body);
+                } else {
+                    anyhow::bail!("Backup Jito error ({}): {}", status, body);
+                }
+            }
+            Err(e) => {
+                anyhow::bail!("Backup Jito network error: {}", e);
+            }
         }
     }
 }

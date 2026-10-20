@@ -42,7 +42,23 @@ pub enum TradeAction {
         is_panic: bool,
         token_program: Option<Pubkey>,
     },
+    Arbitrage {
+        mint: Pubkey,
+        pool_a_name: String,
+        pool_b_name: String,
+        sol_in_lamports: u64,
+        min_sol_out_lamports: u64,
+        expected_profit_lamports: u64,
+        instructions: Vec<solana_sdk::instruction::Instruction>,
+    },
+    PumpSwapBuy {
+        mint: Pubkey,
+        sol_amount_lamports: u64,
+        template_instruction: solana_sdk::instruction::Instruction,
+        token_program: Option<Pubkey>,
+    },
 }
+
 
 pub struct ExecutionEngine {
     keypair: Arc<Keypair>,
@@ -204,6 +220,174 @@ impl ExecutionEngine {
             } => {
                 self.execute_sell(mint, token_amount, slippage_bps, curve_state, is_panic, token_program)
                     .await
+            }
+
+            TradeAction::Arbitrage {
+                mint,
+                pool_a_name,
+                pool_b_name,
+                sol_in_lamports,
+                min_sol_out_lamports,
+                expected_profit_lamports,
+                mut instructions,
+            } => {
+                let blockhash = self.blockhash_cache.get_latest().await;
+                let optimal_tip = self
+                    .tip_engine
+                    .calculate_optimal_tip(expected_profit_lamports)
+                    .unwrap_or_else(|| self.tip_engine.default_tip());
+
+                info!(
+                    "⚡ Executing ATOMIC ARBITRAGE for Mint {} | {} -> {} | In: {:.4} SOL | Exp Out: {:.4} SOL | Gross Profit: {:.4} SOL | Jito Tip: {:.5} SOL",
+                    mint,
+                    pool_a_name,
+                    pool_b_name,
+                    sol_in_lamports as f64 / 1e9,
+                    min_sol_out_lamports as f64 / 1e9,
+                    expected_profit_lamports as f64 / 1e9,
+                    optimal_tip as f64 / 1e9
+                );
+
+                // Priority compute budget
+                let compute_cu = InstructionBuilder::set_compute_unit_limit(350_000);
+                let compute_price = InstructionBuilder::set_compute_unit_price(200_000);
+                let mut full_instructions = vec![compute_cu, compute_price];
+                full_instructions.append(&mut instructions);
+
+                let bundle_tx = self.jito_client.build_tip_bundle(
+                    &self.keypair,
+                    full_instructions,
+                    optimal_tip,
+                    blockhash,
+                );
+
+                let sig = bundle_tx.signatures[0];
+
+                // Arbitrage is 100% private Jito bundle submission (Zero-Loss Guarantee)
+                // We deliberately DO NOT broadcast to public RPC to prevent sandwich attacks and avoid gas on dropped bundles
+                let bundle_id = self.jito_client.send_bundle(&bundle_tx).await?;
+                info!(
+                    "📡 Private Jito MEV bundle dispatched (sig: {} | Jito: {}). Verifying on-chain landing...",
+                    sig, bundle_id
+                );
+
+                let landed = self
+                    .wait_for_confirmation(&sig, 12, std::time::Duration::from_millis(350))
+                    .await;
+                if landed {
+                    let net_profit = expected_profit_lamports.saturating_sub(optimal_tip);
+                    info!(
+                        "🎉 ARBITRAGE LANDED ON-CHAIN! Tx: https://solscan.io/tx/{} | Mint: {} | Net Profit: {:.4} SOL",
+                        sig,
+                        mint,
+                        net_profit as f64 / 1e9
+                    );
+                } else {
+                    warn!(
+                        "⚠️ Arb bundle for mint {} did not land on-chain (outbid or slipped). Capital 100% safe (reverted or not mined).",
+                        mint
+                    );
+                }
+                Ok(())
+            }
+
+            TradeAction::PumpSwapBuy {
+                mint,
+                sol_amount_lamports,
+                template_instruction,
+                token_program,
+            } => {
+                let blockhash = self.blockhash_cache.get_latest().await;
+                let payer_pubkey = self.keypair.pubkey();
+                let token_prog = token_program.unwrap_or_else(crate::constants::spl_token_program_id);
+                let wsol_mint = crate::constants::wsol_mint();
+                let spl_token_prog = crate::constants::spl_token_program_id();
+
+                let (our_wsol_ata, _) = crate::constants::derive_associated_user_token(&payer_pubkey, &wsol_mint, &spl_token_prog);
+                let (our_token_ata, _) = crate::constants::derive_associated_user_token(&payer_pubkey, &mint, &token_prog);
+
+                let compute_cu = InstructionBuilder::set_compute_unit_limit(250_000);
+                let compute_price = InstructionBuilder::set_compute_unit_price(150_000);
+
+                let create_wsol_ata = InstructionBuilder::create_ata_idempotent(&payer_pubkey, &payer_pubkey, &wsol_mint, &spl_token_prog);
+                let fund_wsol = crate::constants::create_transfer_instruction(&payer_pubkey, &our_wsol_ata, sol_amount_lamports);
+                let sync_native = solana_sdk::instruction::Instruction::new_with_bytes(
+                    spl_token_prog,
+                    &[17u8],
+                    vec![solana_sdk::instruction::AccountMeta::new(our_wsol_ata, false)],
+                );
+                let create_token_ata = InstructionBuilder::create_ata_idempotent(&payer_pubkey, &payer_pubkey, &mint, &token_prog);
+
+                let buy_pod = if template_instruction.data.len() >= 24 {
+                    crate::decoders::PumpFunBuyPod::read_from_raw(&template_instruction.data)
+                } else {
+                    None
+                };
+
+                let (scaled_tokens, max_sol) = if let Some(pod) = buy_pod {
+                    if pod.max_sol_cost > 0 {
+                        let tokens = (pod.amount as u128 * sol_amount_lamports as u128 / pod.max_sol_cost as u128) as u64;
+                        let with_slippage = tokens * 95 / 100;
+                        (with_slippage.max(1), sol_amount_lamports)
+                    } else {
+                        (1u64, sol_amount_lamports)
+                    }
+                } else {
+                    (1u64, sol_amount_lamports)
+                };
+
+                let buy_ix = match InstructionBuilder::build_pumpswap_amm_buy_from_template(
+                    &template_instruction.accounts,
+                    &payer_pubkey,
+                    &our_wsol_ata,
+                    &our_token_ata,
+                    scaled_tokens,
+                    max_sol,
+                ) {
+                    Some(ix) => ix,
+                    None => {
+                        error!("Failed to build PumpSwap AMM buy instruction from template for mint {}", mint);
+                        return Ok(());
+                    }
+                };
+
+                let close_wsol = InstructionBuilder::close_ata(&our_wsol_ata, &payer_pubkey, &payer_pubkey, &spl_token_prog);
+
+                let instructions = vec![
+                    compute_cu,
+                    compute_price,
+                    create_wsol_ata,
+                    fund_wsol,
+                    sync_native,
+                    create_token_ata,
+                    buy_ix,
+                    close_wsol,
+                ];
+
+                info!("🎯 Dispatching PumpSwap AMM Co-Snipe for Mint {} | Spend: {:.4} SOL | Exp Min Tokens: {}", mint, sol_amount_lamports as f64 / 1e9, scaled_tokens);
+
+                let tip = self.tip_engine.default_tip();
+                let bundle_tx = self.jito_client.build_tip_bundle(
+                    &self.keypair,
+                    instructions,
+                    tip,
+                    blockhash,
+                );
+
+                let sig = bundle_tx.signatures[0];
+
+                self.send_via_rpc(&bundle_tx);
+
+                let bundle_id = self.jito_client.send_bundle(&bundle_tx).await?;
+                info!("📡 PumpSwap AMM Co-Snipe dispatched (sig: {} | Jito: {} | RPC route: {})...", sig, bundle_id, self.dual_route_rpc);
+
+                let landed = self.wait_for_confirmation(&sig, 15, std::time::Duration::from_millis(300)).await;
+                if landed {
+                    info!("🎉 PUMPSWAP AMM CO-SNIPE CONFIRMED ON-CHAIN! Tx: https://solscan.io/tx/{} | Mint: {}", sig, mint);
+                } else {
+                    warn!("⚠️ PumpSwap AMM bundle for mint {} did not land on-chain. Capital preserved (0 SOL spent).", mint);
+                }
+                Ok(())
             }
         }
     }

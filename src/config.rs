@@ -28,6 +28,14 @@ pub struct BotConfig {
     pub max_curve_cache_entries: usize,
 }
 
+/// DUAL_ROUTE_RPC: also send transactions via public RPC (default true; "0/false/no/off" disables)
+pub fn dual_route_rpc_from_env() -> bool {
+    env::var("DUAL_ROUTE_RPC")
+        .ok()
+        .map(|v| !matches!(v.trim().to_ascii_lowercase().as_str(), "0" | "false" | "no" | "off"))
+        .unwrap_or(true)
+}
+
 impl BotConfig {
     pub fn load_from_env() -> Result<Self> {
         let _ = dotenv::dotenv();
@@ -135,10 +143,7 @@ impl BotConfig {
             });
 
         // Also send transactions via public RPC sendTransaction (true) or Jito bundles only (false)
-        let dual_route_rpc = env::var("DUAL_ROUTE_RPC")
-            .ok()
-            .map(|v| !matches!(v.trim().to_ascii_lowercase().as_str(), "0" | "false" | "no" | "off"))
-            .unwrap_or(true);
+        let dual_route_rpc = dual_route_rpc_from_env();
 
         let positions_file = env::var("POSITIONS_FILE")
             .unwrap_or_else(|_| "data/positions.json".to_string());

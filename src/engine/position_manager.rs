@@ -280,6 +280,11 @@ impl PositionManager {
         self.state.read().await.committed_lamports() as f64 / 1e9
     }
 
+    /// Lamports committed to open positions plus buys still in flight
+    pub async fn total_invested_lamports(&self) -> u64 {
+        self.state.read().await.committed_lamports()
+    }
+
     /// Check if we already have an active or pending position for a mint
     pub async fn has_position(&self, mint: &Pubkey) -> bool {
         let state = self.state.read().await;

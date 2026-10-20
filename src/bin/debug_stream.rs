@@ -55,7 +55,7 @@ async fn main() -> Result<()> {
     };
 
     let (_sink, mut stream) = client.subscribe_with_request(Some(request)).await?;
-    let listen = Duration::from_secs(10);
+    let listen = Duration::from_secs(20);
     println!("Listening for {} seconds...", listen.as_secs());
 
     let pumpfun_bytes = clockit::constants::pumpfun_program_id().to_bytes();
@@ -67,6 +67,7 @@ async fn main() -> Result<()> {
     let mut inner_creates = 0;
     let mut inner_buys = 0;
     let mut inner_sells = 0;
+    let mut dumped_buy_layout = false;
 
     let mut disc_counts: HashMap<u64, usize> = HashMap::new();
 
@@ -104,6 +105,10 @@ async fn main() -> Result<()> {
                 create_count += 1;
             } else if fast_is_discriminator(&ix.data, BUY_DISCRIMINATOR_U64) {
                 buy_count += 1;
+                if !dumped_buy_layout {
+                    dump_buy_layout(&ix.data, &ix.accounts, &account_keys);
+                    dumped_buy_layout = true;
+                }
             } else if fast_is_discriminator(&ix.data, SELL_DISCRIMINATOR_U64)
                 || fast_is_discriminator(&ix.data, SELL_DISCRIMINATOR_ALT_U64)
             {
@@ -120,6 +125,10 @@ async fn main() -> Result<()> {
                     inner_creates += 1;
                 } else if fast_is_discriminator(&inner_ix.data, BUY_DISCRIMINATOR_U64) {
                     inner_buys += 1;
+                    if !dumped_buy_layout {
+                        dump_buy_layout(&inner_ix.data, &inner_ix.accounts, &account_keys);
+                        dumped_buy_layout = true;
+                    }
                 } else if fast_is_discriminator(&inner_ix.data, SELL_DISCRIMINATOR_U64)
                     || fast_is_discriminator(&inner_ix.data, SELL_DISCRIMINATOR_ALT_U64)
                 {
@@ -139,4 +148,21 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Print the raw data and resolved account list of a live Pump.fun buy instruction
+fn dump_buy_layout(data: &[u8], accounts: &[u8], account_keys: &[&[u8]]) {
+    println!("\n🎯 LIVE PUMP.FUN BUY INSTRUCTION FOUND!");
+    println!("Data len: {} bytes: {:?}", data.len(), data);
+    println!("Accounts count: {}", accounts.len());
+    for (idx, acc_idx) in accounts.iter().enumerate() {
+        match account_keys
+            .get(*acc_idx as usize)
+            .and_then(|k| <[u8; 32]>::try_from(*k).ok())
+        {
+            Some(bytes) => println!("  [{}] Account idx {}: {}", idx, acc_idx, solana_sdk::pubkey::Pubkey::new_from_array(bytes)),
+            None => println!("  [{}] Account idx {}: <out of bounds>", idx, acc_idx),
+        }
+    }
+    println!();
 }

@@ -66,4 +66,28 @@ impl FastPubkeyFilter {
             None
         }
     }
+
+    /// Fast check if a specific pubkey matches our targets
+    #[inline(always)]
+    pub fn contains(&self, key: &Pubkey) -> bool {
+        let bytes = key.to_bytes();
+        #[cfg(all(target_arch = "x86_64", target_feature = "avx2"))]
+        {
+            unsafe {
+                let key_vec = _mm256_loadu_si256(bytes.as_ptr() as *const __m256i);
+                for target in &self.simd_targets {
+                    let cmp = _mm256_cmpeq_epi8(key_vec, *target);
+                    let mask = _mm256_movemask_epi8(cmp);
+                    if mask == -1 {
+                        return true;
+                    }
+                }
+            }
+            false
+        }
+        #[cfg(not(all(target_arch = "x86_64", target_feature = "avx2")))]
+        {
+            self.target_pubkeys.contains(&bytes)
+        }
+    }
 }

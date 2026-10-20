@@ -1,0 +1,83 @@
+[
+  {
+    "slot": 454700010,
+    "signature": "3Ab...init",
+    "dex": "pumpfun",
+    "event_type": "pool_state",
+    "mint": "BM2k8mJUbMthHoioykyUm2NjMrXvLBYhoXruwYLpump",
+    "pool_a_sol_reserves": 85000000000,
+    "pool_a_token_reserves": 206900000000000,
+    "pool_a_fee_bps": 100,
+    "pool_b_sol_reserves": 85000000000,
+    "pool_b_token_reserves": 206900000000000,
+    "pool_b_fee_bps": 25,
+    "trade_sol_amount": 0,
+    "trade_direction": "none"
+  },
+  {
+    "slot": 454700015,
+    "signature": "4Bc...whale_pump_buy",
+    "dex": "pumpfun",
+    "event_type": "trade",
+    "mint": "BM2k8mJUbMthHoioykyUm2NjMrXvLBYhoXruwYLpump",
+    "pool_target": "pool_a",
+    "trade_sol_amount": 6000000000,
+    "is_buy": true,
+    "note": "Whale buys 6 SOL on Pump.fun curve, driving up Pool A price"
+  },
+  {
+    "slot": 454700020,
+    "signature": "5Cd...retail_raydium_sell",
+    "dex": "raydium",
+    "event_type": "trade",
+    "mint": "BM2k8mJUbMthHoioykyUm2NjMrXvLBYhoXruwYLpump",
+    "pool_target": "pool_b",
+    "trade_sol_amount": 12000000000,
+    "is_buy": false,
+    "note": "Trader dumps on Raydium, pushing Pool B price down and widening spread"
+  },
+  {
+    "slot": 454700025,
+    "signature": "6De...retail_pump_buy",
+    "dex": "pumpfun",
+    "event_type": "trade",
+    "mint": "BM2k8mJUbMthHoioykyUm2NjMrXvLBYhoXruwYLpump",
+    "pool_target": "pool_a",
+    "trade_sol_amount": 4000000000,
+    "is_buy": true,
+    "note": "Retail FOMO buy on Pump.fun"
+  },
+  {
+    "slot": 454700030,
+    "signature": "7Ef...raydium_large_buy",
+    "dex": "raydium",
+    "event_type": "trade",
+    "mint": "BM2k8mJUbMthHoioykyUm2NjMrXvLBYhoXruwYLpump",
+    "pool_target": "pool_b",
+    "trade_sol_amount": 20000000000,
+    "is_buy": true,
+    "note": "Heavy buy on Raydium, flipping price higher than Pump.fun"
+  },
+  {
+    "slot": 454700035,
+    "signature": "8Fg...retail_raydium_buy",
+    "dex": "raydium",
+    "event_type": "trade",
+    "mint": "BM2k8mJUbMthHoioykyUm2NjMrXvLBYhoXruwYLpump",
+    "pool_target": "pool_b",
+    "trade_sol_amount": 15000000000,
+    "is_buy": true,
+    "note": "Another buy on Raydium, widening gap further"
+  },
+  {
+    "slot": 454700040,
+    "signature": "9Gh...pump_retail_dump",
+    "dex": "pumpfun",
+    "event_type": "trade",
+    "mint": "BM2k8mJUbMthHoioykyUm2NjMrXvLBYhoXruwYLpump",
+    "pool_target": "pool_a",
+    "trade_sol_amount": 8000000000,
+    "is_buy": false,
+    "note": "Retail dumps on Pump.fun, creating huge buying opportunity on curve to sell on Raydium"
+  }
+]

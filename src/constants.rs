@@ -6,8 +6,14 @@ pub const PUMPFUN_PROGRAM: &str = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P";
 pub const PUMPFUN_FEE_RECIPIENT: &str = "CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbicfhtW4xC9iM";
 pub const PUMPFUN_GLOBAL: &str = "4wTV1YmiEkRvAtNtsSGPtUrqRYQMe5SKy2uB4Jjaxnjf";
 pub const PUMPFUN_EVENT_AUTHORITY: &str = "Ce6TQqeHC9p8KetsN6JsjHK7UTZk7nasjjnr7XxXp9F1";
-pub const PUMPSWAP_PROGRAM: &str = "BSfD6SHZigAfDWSQUAcsqqEGEHtNuAJaJWPGVNjek4c5";
+pub const PUMPSWAP_PROGRAM: &str = "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA";
+pub const PUMPSWAP_AMM_PROGRAM: &str = "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA";
 pub const RAYDIUM_CPMM_PROGRAM: &str = "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C";
+pub const RAYDIUM_AMM_V4_PROGRAM: &str = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8";
+pub const ORCA_WHIRLPOOL_PROGRAM: &str = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc";
+pub const METEORA_DLMM_PROGRAM: &str = "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo";
+pub const WSOL_MINT: &str = "So11111111111111111111111111111111111111112";
+
 
 // 8-byte Raw Anchor Discriminators
 pub const CREATE_DISCRIMINATOR_BYTES: [u8; 8] = [24, 30, 200, 40, 5, 28, 7, 119];
@@ -148,6 +154,36 @@ pub fn system_program_id() -> Pubkey {
     Pubkey::from_str("11111111111111111111111111111111").unwrap()
 }
 
+#[inline(always)]
+pub fn raydium_amm_v4_program_id() -> Pubkey {
+    Pubkey::from_str(RAYDIUM_AMM_V4_PROGRAM).unwrap()
+}
+
+#[inline(always)]
+pub fn raydium_cpmm_program_id() -> Pubkey {
+    Pubkey::from_str(RAYDIUM_CPMM_PROGRAM).unwrap()
+}
+
+#[inline(always)]
+pub fn orca_whirlpool_program_id() -> Pubkey {
+    Pubkey::from_str(ORCA_WHIRLPOOL_PROGRAM).unwrap()
+}
+
+#[inline(always)]
+pub fn meteora_dlmm_program_id() -> Pubkey {
+    Pubkey::from_str(METEORA_DLMM_PROGRAM).unwrap()
+}
+
+#[inline(always)]
+pub fn pumpswap_amm_program_id() -> Pubkey {
+    Pubkey::from_str(PUMPSWAP_AMM_PROGRAM).unwrap()
+}
+
+#[inline(always)]
+pub fn wsol_mint() -> Pubkey {
+    Pubkey::from_str(WSOL_MINT).unwrap()
+}
+
 /// Zero-dependency native SOL transfer instruction (discriminator 2)
 pub fn create_transfer_instruction(
     from: &Pubkey,
@@ -166,4 +202,5 @@ pub fn create_transfer_instruction(
         ],
     )
 }
+
 

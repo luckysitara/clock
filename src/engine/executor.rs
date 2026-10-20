@@ -559,7 +559,7 @@ impl ExecutionEngine {
             + TOKEN_ACCOUNT_RENT_LAMPORTS
             + BUY_FEE_HEADROOM_LAMPORTS;
         let balance = self.balance_lamports.load(std::sync::atomic::Ordering::Relaxed);
-        if balance != u64::MAX && balance < required {
+        if !self.is_dry_run() && balance != u64::MAX && balance < required {
             warn!(
                 "💸 Skipping buy of {}: wallet has {:.4} SOL, needs {:.4} SOL (max cost + tip + account rent + fees)",
                 mint, balance as f64 / 1e9, required as f64 / 1e9
@@ -610,8 +610,13 @@ impl ExecutionEngine {
 
         if self.is_dry_run() {
             if let Err(e) = self.simulate(&bundle_tx).await {
-                warn!("📝 [PAPER] Buy simulation failed for {} (a live buy would fail too): {}", mint, e);
-                return Ok(false);
+                // Paper trading judges the trade, not the current wallet balance
+                let unfunded = e.contains("insufficient lamports") || e.contains("AccountNotFound") || e.contains("\"Custom\":1}");
+                if !unfunded {
+                    warn!("📝 [PAPER] Buy simulation failed for {} (a live buy would fail too): {}", mint, e);
+                    return Ok(false);
+                }
+                info!("📝 [PAPER] Wallet can't fund this buy right now; paper-trading it anyway");
             }
             // Fill at the curve price without slippage, minus the estimated Pump.fun fee
             let ideal = curve_state.calculate_buy_output(sol_amount_lamports, 0).map(|c| c.tokens_out).unwrap_or(calc.tokens_out);

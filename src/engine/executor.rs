@@ -89,7 +89,15 @@ pub struct ExecutionEngine {
     paper_log: Option<std::path::PathBuf>,
     /// Last known wallet balance in lamports (u64::MAX until first fetched)
     balance_lamports: Arc<std::sync::atomic::AtomicU64>,
+    /// Live: keep at least this much in the wallet after a buy
+    min_balance_lamports: u64,
+    /// Live: stop buying after this many buys in total (0 = no limit), counted in LIVE_BUYS_LOG
+    max_live_buys: u64,
+    live_buys: std::sync::atomic::AtomicU64,
 }
+
+/// Every live buy sent, one JSON line each (also counts buys across restarts for MAX_LIVE_BUYS)
+pub const LIVE_BUYS_LOG: &str = "data/live_buys.jsonl";
 
 /// Rent for a new token account (refunded when it is closed)
 const TOKEN_ACCOUNT_RENT_LAMPORTS: u64 = 2_039_280;
@@ -119,6 +127,9 @@ impl ExecutionEngine {
             dual_route_rpc,
             paper_log: None,
             balance_lamports: Arc::new(std::sync::atomic::AtomicU64::new(u64::MAX)),
+            min_balance_lamports: 0,
+            max_live_buys: 0,
+            live_buys: std::sync::atomic::AtomicU64::new(0),
             http_client: Client::builder()
                 .timeout(std::time::Duration::from_millis(2500))
                 .build()
@@ -196,6 +207,15 @@ impl ExecutionEngine {
     /// Paper trading: nothing is sent; buys are simulated and every trade is logged to `paper_log`
     pub fn with_dry_run(mut self, paper_log: impl Into<std::path::PathBuf>) -> Self {
         self.paper_log = Some(paper_log.into());
+        self
+    }
+
+    /// Live safety limits: a balance floor and a total buy count (buys already in LIVE_BUYS_LOG count)
+    pub fn with_live_limits(mut self, min_balance_sol: f64, max_live_buys: u64) -> Self {
+        self.min_balance_lamports = (min_balance_sol * 1e9) as u64;
+        self.max_live_buys = max_live_buys;
+        let sent = std::fs::read_to_string(LIVE_BUYS_LOG).map_or(0, |s| s.lines().filter(|l| !l.trim().is_empty()).count());
+        self.live_buys = std::sync::atomic::AtomicU64::new(sent as u64);
         self
     }
 
@@ -326,6 +346,22 @@ impl ExecutionEngine {
         })();
         if let Err(e) = result {
             warn!("Could not write {}: {}", LATENCY_LOG, e);
+        }
+    }
+
+    fn record_live_buy(&self, mint: &Pubkey, sig: &solana_sdk::signature::Signature) {
+        self.live_buys.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let record = serde_json::json!({
+            "mint": mint.to_string(), "sig": sig.to_string(),
+            "ts": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0),
+        });
+        let result = (|| -> std::io::Result<()> {
+            std::fs::create_dir_all("data")?;
+            use std::io::Write;
+            std::fs::OpenOptions::new().create(true).append(true).open(LIVE_BUYS_LOG)?.write_all(format!("{}\n", record).as_bytes())
+        })();
+        if let Err(e) = result {
+            warn!("Could not write {}: {}", LIVE_BUYS_LOG, e);
         }
     }
 
@@ -628,7 +664,24 @@ impl ExecutionEngine {
             + TOKEN_ACCOUNT_RENT_LAMPORTS
             + BUY_FEE_HEADROOM_LAMPORTS;
         let balance = self.balance_lamports.load(std::sync::atomic::Ordering::Relaxed);
-        if !self.is_dry_run() && balance != u64::MAX && balance < required {
+        if !self.is_dry_run() && self.max_live_buys > 0
+            && self.live_buys.load(std::sync::atomic::Ordering::Relaxed) >= self.max_live_buys
+        {
+            warn!("🛑 Skipping buy of {}: MAX_LIVE_BUYS ({}) reached (see {})", mint, self.max_live_buys, LIVE_BUYS_LOG);
+            return Ok(false);
+        }
+        if !self.is_dry_run() && self.min_balance_lamports > 0 && balance == u64::MAX {
+            warn!("🛑 Skipping buy of {}: wallet balance not known yet (MIN_WALLET_BALANCE_SOL is set)", mint);
+            return Ok(false);
+        }
+        if !self.is_dry_run() && balance != u64::MAX && balance < required + self.min_balance_lamports {
+            if self.min_balance_lamports > 0 && balance >= required {
+                warn!(
+                    "🛑 Skipping buy of {}: wallet has {:.4} SOL, buying would go below the {:.4} SOL floor (MIN_WALLET_BALANCE_SOL)",
+                    mint, balance as f64 / 1e9, self.min_balance_lamports as f64 / 1e9
+                );
+                return Ok(false);
+            }
             warn!(
                 "💸 Skipping buy of {}: wallet has {:.4} SOL, needs {:.4} SOL (max cost + tip + account rent + fees)",
                 mint, balance as f64 / 1e9, required as f64 / 1e9
@@ -719,6 +772,7 @@ impl ExecutionEngine {
         }
 
         let ms = signal.map_or(0, |s| s.seen_at.elapsed().as_millis());
+        self.record_live_buy(&mint, &sig);
         self.send_via_rpc(&bundle_tx);
         let bundle_id = self.jito_client.send_bundle(&bundle_tx).await?;
         info!("📡 Buy dispatched (sig: {} | Jito: {} | RPC route: {}). Verifying on-chain confirmation...", sig, bundle_id, self.dual_route_rpc);

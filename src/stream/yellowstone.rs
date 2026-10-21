@@ -158,6 +158,31 @@ impl YellowstoneStreamer {
         Some(pod)
     }
 
+    /// Sell positions held past MAX_HOLD_MINS
+    async fn sell_expired(&self) {
+        let max_age = Duration::from_secs(self.config.max_hold_mins * 60);
+        for pos in self.position_manager.take_expired(max_age).await {
+            match self.get_curve(&pos.mint).await {
+                Some(curve) if !curve.complete => {
+                    let _ = self
+                        .trade_sender
+                        .send(TradeAction::Sell {
+                            mint: pos.mint,
+                            token_amount: pos.token_balance,
+                            slippage_bps: self.config.slippage_bps,
+                            curve_state: curve,
+                            is_panic: false,
+                            token_program: Some(pos.token_program),
+                        })
+                        .await;
+                }
+                _ => {
+                    warn!("⌛ Can't sell {} on the bonding curve (no curve or graduated)", pos.mint);
+                }
+            }
+        }
+    }
+
     /// Connect to Triton Yellowstone gRPC with retry loop
     pub async fn run_loop(&self) -> Result<()> {
         let target_pubkeys: Vec<Pubkey> = self
@@ -277,7 +302,12 @@ impl YellowstoneStreamer {
 
         info!("🎯 Stream active! Monitoring Processed slot data for {} target wallets and launches...", self.config.target_wallets.len());
 
+        let mut last_hold_check = std::time::Instant::now();
         loop {
+            if self.config.max_hold_mins > 0 && last_hold_check.elapsed() >= Duration::from_secs(15) {
+                last_hold_check = std::time::Instant::now();
+                self.sell_expired().await;
+            }
             // Pump.fun never goes quiet for this long; silence means a dead connection
             // (e.g. a network drop that left the socket open), so reconnect
             let msg_res = match tokio::time::timeout(STREAM_IDLE_TIMEOUT, stream.next()).await {
@@ -573,6 +603,7 @@ impl YellowstoneStreamer {
                                         // Otherwise: did a wallet we copied into this position just sell?
                                         let dev_dump_pos = match dev_dump_pos {
                                             Some(pos) => Some(pos),
+                                            None if !self.config.leader_exit => None,
                                             None => match self.position_manager.check_leader_exit(&mint, &seller).await {
                                                 Some(pos) => Some(pos),
                                                 None => {

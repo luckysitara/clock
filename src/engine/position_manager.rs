@@ -78,6 +78,8 @@ struct State {
     curve_to_mint: HashMap<Pubkey, Pubkey>,
     /// Buys in flight (sent but not yet confirmed): mint → reserved lamports
     pending: HashMap<Pubkey, u64>,
+    /// When each position was opened (or first seen after a restart), for the max-hold exit
+    opened_at: HashMap<Pubkey, std::time::Instant>,
 }
 
 impl State {
@@ -150,6 +152,7 @@ impl PositionManager {
         );
         state.pending.remove(&position.mint);
         state.curve_to_mint.insert(position.bonding_curve, position.mint);
+        state.opened_at.insert(position.mint, std::time::Instant::now());
         state.positions.insert(position.mint, position);
         self.persist(&state);
     }
@@ -262,12 +265,30 @@ impl PositionManager {
         Some(pos.clone())
     }
 
+    /// Positions held longer than `max_age` (marked as selling); dead tokens never trigger price exits
+    pub async fn take_expired(&self, max_age: std::time::Duration) -> Vec<Position> {
+        let mut state = self.state.write().await;
+        let now = std::time::Instant::now();
+        let State { positions, opened_at, .. } = &mut *state;
+        let mut expired = Vec::new();
+        for (mint, pos) in positions.iter_mut() {
+            let opened = *opened_at.entry(*mint).or_insert(now);
+            if !pos.is_selling && now.duration_since(opened) >= max_age {
+                warn!("⌛ MAX HOLD for {}: held {} min, exiting", mint, now.duration_since(opened).as_secs() / 60);
+                pos.is_selling = true;
+                expired.push(pos.clone());
+            }
+        }
+        expired
+    }
+
     /// Remove position once sell is confirmed on-chain
     pub async fn remove_position(&self, mint: &Pubkey) -> Option<Position> {
         let mut state = self.state.write().await;
         let removed = state.positions.remove(mint);
         if let Some(pos) = &removed {
             state.curve_to_mint.remove(&pos.bonding_curve);
+            state.opened_at.remove(mint);
             self.persist(&state);
         }
         removed

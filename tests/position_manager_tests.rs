@@ -151,3 +151,17 @@ async fn leaders_survive_restart_via_state_file() {
     assert_eq!(saved[&mint].leaders, vec![leader.to_string()]);
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[tokio::test]
+async fn max_hold_expires_each_position_once() {
+    let pm = manager();
+    let mint = Pubkey::new_unique();
+    pm.add_position(position(mint, None, 0)).await;
+
+    assert!(pm.take_expired(std::time::Duration::from_secs(3600)).await.is_empty());
+    let expired = pm.take_expired(std::time::Duration::ZERO).await;
+    assert_eq!(expired.len(), 1);
+    assert_eq!(expired[0].mint, mint);
+    // Already selling: not returned again
+    assert!(pm.take_expired(std::time::Duration::ZERO).await.is_empty());
+}

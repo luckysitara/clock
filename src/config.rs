@@ -34,6 +34,14 @@ pub struct BotConfig {
     pub dual_route_rpc: bool,
     pub positions_file: String,
     pub max_curve_cache_entries: usize,
+    /// Sell when a copied wallet sells (LEADER_EXIT, default true)
+    pub leader_exit: bool,
+    /// Sell positions held longer than this many minutes (MAX_HOLD_MINS, 0 = never)
+    pub max_hold_mins: u64,
+    /// Live: no new buys once the wallet balance would drop below this (MIN_WALLET_BALANCE_SOL)
+    pub min_wallet_balance_sol: f64,
+    /// Live: stop buying after this many buys in total (MAX_LIVE_BUYS, 0 = no limit)
+    pub max_live_buys: u64,
 }
 
 /// DUAL_ROUTE_RPC: also send transactions via public RPC (default true; "0/false/no/off" disables)
@@ -195,6 +203,14 @@ impl BotConfig {
             .and_then(|v| v.parse().ok())
             .unwrap_or(10);
 
+        let leader_exit = env::var("LEADER_EXIT")
+            .ok()
+            .map(|v| !matches!(v.trim().to_ascii_lowercase().as_str(), "0" | "false" | "no" | "off"))
+            .unwrap_or(true);
+        let max_hold_mins = env::var("MAX_HOLD_MINS").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
+        let min_wallet_balance_sol = env::var("MIN_WALLET_BALANCE_SOL").ok().and_then(|v| v.parse().ok()).unwrap_or(0.0);
+        let max_live_buys = env::var("MAX_LIVE_BUYS").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
+
         Ok(Self {
             solana_rpc_url,
             yellowstone_grpc_url,
@@ -224,6 +240,10 @@ impl BotConfig {
             dual_route_rpc,
             positions_file,
             max_curve_cache_entries,
+            leader_exit,
+            max_hold_mins,
+            min_wallet_balance_sol,
+            max_live_buys,
         })
     }
 

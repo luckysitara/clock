@@ -40,38 +40,10 @@ async fn main() -> Result<()> {
     );
 
     // 1. Load Configuration
+    // No fallback config: guessed defaults could trade live with the wrong sizes
     let config = Arc::new(BotConfig::load_from_env().unwrap_or_else(|e| {
-        error!("Failed to load configuration: {:#}. Using default parameters.", e);
-        BotConfig {
-            solana_rpc_url: "https://api.mainnet-beta.solana.com".to_string(),
-            yellowstone_grpc_url: "https://solana-grpc.triton.one:443".to_string(),
-            yellowstone_x_token: None,
-            keypair_path: "/home/rootkit/.config/solana/id.json".to_string(),
-            jito_block_engine_url: "https://mainnet.block-engine.jito.wtf/api/v1/bundles".to_string(),
-            min_tip_lamports: 100_000,
-            max_tip_lamports: 50_000_000,
-            tip_aggression_factor: 0.65,
-            tip_max_pct_of_trade: 0.01,
-            tip_max_panic_pct_of_trade: 0.03,
-            dry_run: false,
-            paper_trades_file: "data/paper_trades.jsonl".to_string(),
-            copy_trade_amount_sol: 0.2,
-            max_position_sol: 2.0,
-            slippage_bps: 500,
-            trailing_stop_pct: 0.15,
-            hard_stop_loss_pct: 0.20,
-            take_profit_pct: 2.5,
-            dev_dump_threshold_pct: 0.20,
-            min_creator_buy_sol: 0.20,
-            min_whale_buy_sol: 1.0,
-            target_wallets: vec![],
-            signal_wallets: vec![],
-            signal_min_wallets: 2,
-            signal_window_secs: 10,
-            dual_route_rpc: true,
-            positions_file: "data/positions.json".to_string(),
-            max_curve_cache_entries: 50_000,
-        }
+        error!("Failed to load configuration: {:#}. Refusing to start.", e);
+        std::process::exit(1);
     }));
 
     // 2. Load Keypair
@@ -160,7 +132,7 @@ async fn main() -> Result<()> {
     let executor = Arc::new(if config.dry_run {
         executor.with_dry_run(&config.paper_trades_file)
     } else {
-        executor
+        executor.with_live_limits(config.min_wallet_balance_sol, config.max_live_buys)
     });
 
     executor.spawn_balance_refresher();

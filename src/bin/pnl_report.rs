@@ -144,6 +144,10 @@ fn latency_report(path: &str) -> Result<()> {
             println!("   {:<11} {:>5}  {:>5.1}%  {}", name, n, 100.0 * n as f64 / rows.len() as f64, "█".repeat(40 * n / rows.len()));
         }
         println!("   detection → send: median {} ms, 90th percentile {} ms", pct(50), pct(90));
+        let failed = rows.iter().filter(|r| r["ok"].as_bool() == Some(false)).count();
+        if failed > 0 {
+            println!("   {} of {} failed (price moved past our slippage before we landed)", failed, rows.len());
+        }
     }
     println!("\nBacktest: copying only made money when buys landed in the same block (+1 block already lost).");
     Ok(())

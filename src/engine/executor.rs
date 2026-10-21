@@ -172,6 +172,19 @@ impl ExecutionEngine {
         max_attempts: usize,
         delay: std::time::Duration,
     ) -> Option<u64> {
+        match self.wait_for_outcome(signature, max_attempts, delay).await {
+            Some((slot, true)) => Some(slot),
+            _ => None,
+        }
+    }
+
+    /// Slot the transaction was processed in and whether it succeeded (None = not seen)
+    pub async fn wait_for_outcome(
+        &self,
+        signature: &Signature,
+        max_attempts: usize,
+        delay: std::time::Duration,
+    ) -> Option<(u64, bool)> {
         let payload = serde_json::json!({
             "jsonrpc": "2.0",
             "id": 1,
@@ -190,11 +203,11 @@ impl ExecutionEngine {
                                 let confirmation = status.get("confirmationStatus").and_then(|s| s.as_str());
                                 if confirmation == Some("processed") || confirmation == Some("confirmed") || confirmation == Some("finalized") {
                                     debug!("Signature {} confirmed on attempt {}", signature, attempt);
-                                    return Some(status.get("slot").and_then(|s| s.as_u64()).unwrap_or(0));
+                                    return Some((status.get("slot").and_then(|s| s.as_u64()).unwrap_or(0), true));
                                 }
                             } else if status.get("err").map(|e| !e.is_null()).unwrap_or(false) {
                                 warn!("Signature {} failed on-chain with err: {:?}", signature, status.get("err"));
-                                return None;
+                                return Some((status.get("slot").and_then(|s| s.as_u64()).unwrap_or(0), false));
                             }
                         }
                     }
@@ -326,7 +339,7 @@ impl ExecutionEngine {
 
     /// Append one paper trade record (JSON line)
     /// Record how far behind the triggering trade a copy buy lands (live) or could earliest land (paper)
-    fn log_latency(&self, mint: &Pubkey, signal: Option<Signal>, our_slot: Option<u64>, ms: u128, landed: bool) {
+    fn log_latency(&self, mint: &Pubkey, signal: Option<Signal>, our_slot: Option<u64>, ms: u128, landed: bool, ok: bool) {
         let (Some(signal), Some(our_slot)) = (signal, our_slot) else { return };
         let blocks = our_slot as i64 - signal.slot as i64;
         info!(
@@ -335,7 +348,7 @@ impl ExecutionEngine {
         );
         let record = serde_json::json!({
             "mint": mint.to_string(), "signal_slot": signal.slot, "our_slot": our_slot, "blocks": blocks,
-            "ms": ms as u64, "landed": landed, "paper": self.is_dry_run(),
+            "ms": ms as u64, "landed": landed, "ok": ok, "paper": self.is_dry_run(),
             "ts": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0),
         });
         let line = format!("{}\n", record);
@@ -622,7 +635,15 @@ impl ExecutionEngine {
 
                 self.send_via_rpc(&bundle_tx);
 
-                let bundle_id = self.jito_client.send_bundle(&bundle_tx).await?;
+                let bundle_id = match self.jito_client.send_bundle(&bundle_tx).await {
+                    Ok(id) => id,
+                    // The RPC copy may still land, so keep checking for confirmation
+                    Err(e) if self.dual_route_rpc => {
+                        warn!("Jito rejected PumpSwap buy for {} ({:#}); checking the RPC copy...", mint, e);
+                        "rejected".to_string()
+                    }
+                    Err(e) => return Err(e),
+                };
                 info!("📡 PumpSwap AMM Co-Snipe dispatched (sig: {} | Jito: {} | RPC route: {})...", sig, bundle_id, self.dual_route_rpc);
 
                 let landed = self.wait_for_confirmation(&sig, 15, std::time::Duration::from_millis(300)).await;
@@ -733,7 +754,7 @@ impl ExecutionEngine {
         if self.is_dry_run() {
             let ms = signal.map_or(0, |s| s.seen_at.elapsed().as_millis());
             let (sim_slot, sim) = self.simulate_at(&bundle_tx).await;
-            self.log_latency(&mint, signal, sim_slot, ms, false);
+            self.log_latency(&mint, signal, sim_slot, ms, false, sim.is_ok());
             if let Err(e) = sim {
                 // Paper trading judges the trade, not the current wallet balance
                 let unfunded = e.contains("insufficient lamports") || e.contains("AccountNotFound") || e.contains("\"Custom\":1}");
@@ -774,14 +795,25 @@ impl ExecutionEngine {
         let ms = signal.map_or(0, |s| s.seen_at.elapsed().as_millis());
         self.record_live_buy(&mint, &sig);
         self.send_via_rpc(&bundle_tx);
-        let bundle_id = self.jito_client.send_bundle(&bundle_tx).await?;
-        info!("📡 Buy dispatched (sig: {} | Jito: {} | RPC route: {}). Verifying on-chain confirmation...", sig, bundle_id, self.dual_route_rpc);
+        match self.jito_client.send_bundle(&bundle_tx).await {
+            Ok(bundle_id) => info!("📡 Buy dispatched (sig: {} | Jito: {} | RPC route: {}). Verifying on-chain confirmation...", sig, bundle_id, self.dual_route_rpc),
+            // The RPC copy may already have landed ("already processed"), so check before giving up
+            Err(e) if self.dual_route_rpc => warn!("Jito rejected buy for {} ({:#}); checking whether the RPC copy landed...", mint, e),
+            Err(e) => return Err(e),
+        }
 
-        let landed_slot = self.wait_for_landing_slot(&sig, 15, std::time::Duration::from_millis(400)).await;
-        self.log_latency(&mint, signal, landed_slot.filter(|&s| s > 0), ms, true);
-        if landed_slot.is_none() {
-            warn!("⚠️ Bundle for mint {} did not land on-chain (dropped or outbid). Capital preserved (0 SOL spent).", mint);
-            return Ok(false);
+        let outcome = self.wait_for_outcome(&sig, 15, std::time::Duration::from_millis(400)).await;
+        self.log_latency(&mint, signal, outcome.map(|(slot, _)| slot).filter(|&s| s > 0), ms, true, outcome.map_or(false, |(_, ok)| ok));
+        match outcome {
+            Some((_, true)) => {}
+            Some((_, false)) => {
+                warn!("❌ Buy for mint {} failed on-chain (network fee spent, no tokens bought)", mint);
+                return Ok(false);
+            }
+            None => {
+                warn!("⚠️ Bundle for mint {} did not land on-chain (dropped or outbid). Capital preserved (0 SOL spent).", mint);
+                return Ok(false);
+            }
         }
 
         // Pump.fun buys exactly calc.tokens_out and charges only what those cost, which is less than

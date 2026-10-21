@@ -15,6 +15,7 @@
 //!                 [--wallets a,b,...] [--max-wallet-txs 5000] [--max-mint-txs 4000]
 //!                 [--max-tokens-per-wallet N] [--sweep] [--offline]
 //!                 [--copy-sol X] [--max-position-sol X] [--tip-pct F] [--panic-tip-pct F]
+//!                 [--take-profit X] [--hard-stop F] [--trailing F]
 //!                 [--end UNIX_TS] [--no-leader-exit] [--max-hold-mins M] [--select-wallets [--min-select-trades N]]
 
 use anyhow::Result;
@@ -833,9 +834,9 @@ async fn main() -> Result<()> {
     let tips = TipEngine::new(config.min_tip_lamports, config.max_tip_lamports, config.tip_aggression_factor)
         .with_trade_caps(arg(&args, "--tip-pct", config.tip_max_pct_of_trade), arg(&args, "--panic-tip-pct", config.tip_max_panic_pct_of_trade));
     let base = Params {
-        trailing: config.trailing_stop_pct,
-        hard_stop: config.hard_stop_loss_pct,
-        take_profit: config.take_profit_pct,
+        trailing: arg(&args, "--trailing", config.trailing_stop_pct),
+        hard_stop: arg(&args, "--hard-stop", config.hard_stop_loss_pct),
+        take_profit: arg(&args, "--take-profit", config.take_profit_pct),
         dev_dump: config.dev_dump_threshold_pct,
         leader_exit: !args.iter().any(|a| a == "--no-leader-exit"),
         latency_slots: latency,

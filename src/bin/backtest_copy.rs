@@ -14,6 +14,8 @@
 //!   backtest_copy [--days 7] [--latency-slots 2] [--hold-hours 6] [--parallel 8]
 //!                 [--wallets a,b,...] [--max-wallet-txs 5000] [--max-mint-txs 4000]
 //!                 [--max-tokens-per-wallet N] [--sweep] [--offline]
+//!                 [--copy-sol X] [--max-position-sol X] [--tip-pct F] [--panic-tip-pct F]
+//!                 [--end UNIX_TS] [--no-leader-exit] [--max-hold-mins M] [--select-wallets [--min-select-trades N]]
 
 use anyhow::Result;
 use futures::stream::{self, StreamExt};
@@ -98,6 +100,10 @@ struct MintCache {
     /// Tokens the creator bought in the create transaction (0 = unknown)
     dev_initial: u64,
     creation_sig: Option<String>,
+    /// Window signatures, oldest first, as of the last online run: offline replays keep the exact
+    /// on-chain order of trades within a slot
+    #[serde(default)]
+    order: Vec<String>,
 }
 
 fn cache_path(kind: &str, key: &str) -> PathBuf {
@@ -305,7 +311,7 @@ impl Fetcher {
 }
 
 /// A copied wallet's Pump.fun trades over the period (from its own transaction history)
-async fn wallet_trades(f: &Fetcher, wallet: &str, since_ts: i64, max_txs: usize, offline: bool) -> (Vec<Trade>, i64) {
+async fn wallet_trades(f: &Fetcher, wallet: &str, since_ts: i64, until_ts: i64, max_txs: usize, offline: bool) -> (Vec<Trade>, i64) {
     let path = cache_path("wallets", wallet);
     let mut cache: TxCache = load(&path);
     let (sigs, reached_start) = if offline {
@@ -313,7 +319,7 @@ async fn wallet_trades(f: &Fetcher, wallet: &str, since_ts: i64, max_txs: usize,
     } else {
         f.signatures(wallet, since_ts, max_txs, 0).await
     };
-    let wanted: Vec<String> = sigs.iter().filter(|s| s.2 && s.1 >= since_ts).map(|s| s.0.clone()).collect();
+    let wanted: Vec<String> = sigs.iter().filter(|s| s.2 && s.1 >= since_ts && s.1 <= until_ts).map(|s| s.0.clone()).collect();
     // Only when the tx cap stopped paging before reaching the start of the period
     let covered_from = match sigs.last() {
         Some(oldest) if !reached_start && oldest.1 >= since_ts => oldest.1,
@@ -322,7 +328,7 @@ async fn wallet_trades(f: &Fetcher, wallet: &str, since_ts: i64, max_txs: usize,
     f.fetch_txs(&wanted, &mut cache, f.parallel).await;
     save(&path, &cache);
     let trades = cache.txs.values().flatten()
-        .filter(|t| t.ts >= since_ts && (t.user == wallet || t.fee_payer == wallet))
+        .filter(|t| t.ts >= since_ts && t.ts <= until_ts && (t.user == wallet || t.fee_payer == wallet))
         .cloned()
         .collect();
     (trades, covered_from)
@@ -343,14 +349,13 @@ async fn mint_history(f: &Fetcher, mint: &str, from_ts: i64, to_ts: i64, max_txs
     let mut truncated = false;
     let mut window: Vec<(String, i64)> = Vec::new();
     if offline {
-        let mut cached: Vec<&Trade> = cache.txs.txs.values().flatten().filter(|t| t.mint == mint).collect();
-        cached.sort_by_key(|t| t.slot);
-        return MintHistory {
-            mint: mint.to_string(),
-            trades: cached.into_iter().filter(|t| t.ts >= from_ts && t.ts <= to_ts).cloned().collect(),
-            dev_initial: cache.dev_initial,
-            truncated,
-        };
+        let trades = cache.order.iter()
+            .filter_map(|sig| cache.txs.txs.get(sig))
+            .flatten()
+            .filter(|t| t.mint == mint && t.ts >= from_ts && t.ts <= to_ts)
+            .cloned()
+            .collect();
+        return MintHistory { mint: mint.to_string(), trades, dev_initial: cache.dev_initial, truncated };
     }
     // Newest first; a few pages past the window find the create tx for young tokens
     let (sigs, reached_start) = f.signatures(&curve, from_ts, 50_000, 3).await;
@@ -376,6 +381,7 @@ async fn mint_history(f: &Fetcher, mint: &str, from_ts: i64, to_ts: i64, max_txs
             cache.dev_initial = trades.iter().filter(|t| t.mint == mint && t.is_buy && t.user == t.creator).map(|t| t.tokens).sum();
         }
     }
+    cache.order = window.iter().map(|w| w.0.clone()).collect();
     save(&path, &cache);
     // Signature order is chronological within a slot; keep it
     let trades = window.iter()
@@ -397,8 +403,11 @@ struct Params {
     dev_dump: f64,
     leader_exit: bool,
     latency_slots: u64,
+    /// Sell after holding this long (0 = never; the live bot has no time exit)
+    max_hold_secs: i64,
 }
 
+#[derive(Clone)]
 struct Settings {
     copy_lamports: u64,
     max_position_lamports: u64,
@@ -487,6 +496,7 @@ async fn simulate(hist: &[MintHistory], timeline: &[(u64, usize, usize)], s: &Se
     // Tokens whose fetched tape has ended (nothing to price a new position with)
     let mut finished: Vec<bool> = vec![false; hist.len()];
     let mut open: HashMap<usize, Open> = HashMap::new();
+    let mut exiting: HashSet<usize> = HashSet::new();
     let mut pending: Vec<Pending> = Vec::new();
     let mut r = SimResult::default();
 
@@ -514,6 +524,7 @@ async fn simulate(hist: &[MintHistory], timeline: &[(u64, usize, usize)], s: &Se
         }
 
         // 3. Exits for a position we hold (stream: curve account update, then sell detection)
+        exiting.retain(|m| open.contains_key(m));
         if open.contains_key(&mi) {
             let mint = &mints[mi];
             let mut exit = if curve.complete {
@@ -537,7 +548,10 @@ async fn simulate(hist: &[MintHistory], timeline: &[(u64, usize, usize)], s: &Se
                     }
                 }
             }
-            if let Some((reason, panic)) = exit {
+            if exit.is_none() && p.max_hold_secs > 0 && !exiting.contains(&mi) && open.get(&mi).map_or(false, |o| t.ts - o.entry_ts >= p.max_hold_secs) {
+                exit = Some(("MaxHold".into(), false));
+            }
+            if let Some((reason, panic)) = exit.filter(|_| exiting.insert(mi)) {
                 pending.push(Pending { fill_slot: slot + p.latency_slots, mint: mi, order: Order::Sell { reason, panic } });
             }
         }
@@ -722,7 +736,8 @@ async fn main() -> Result<()> {
     };
     anyhow::ensure!(!wallets.is_empty(), "no wallets: set TARGET_WALLETS or pass --wallets");
 
-    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs() as i64;
+    // --end (unix seconds) replays a fixed past period, e.g. one already in the cache with --offline
+    let now: i64 = arg(&args, "--end", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_secs() as i64);
     let since = now - (days * 86_400.0) as i64;
     let hold = (hold_hours * 3600.0) as i64;
     let f = Fetcher {
@@ -741,7 +756,7 @@ async fn main() -> Result<()> {
     let mut all_buys: HashMap<String, (i64, i64)> = HashMap::new();
     let mut sampled: HashSet<String> = HashSet::new();
     for (i, w) in wallets.iter().enumerate() {
-        let (trades, covered_from) = wallet_trades(&f, w, since, max_wallet_txs, offline).await;
+        let (trades, covered_from) = wallet_trades(&f, w, since, now, max_wallet_txs, offline).await;
         let buys: Vec<&Trade> = trades.iter().filter(|t| t.is_buy).collect();
         for b in &buys {
             let e = all_buys.entry(b.mint.clone()).or_insert((b.ts, b.ts));
@@ -805,27 +820,32 @@ async fn main() -> Result<()> {
         .collect();
     timeline.sort();
 
+    let copy_sol: f64 = arg(&args, "--copy-sol", config.copy_trade_amount_sol);
+    let max_position_sol: f64 = arg(&args, "--max-position-sol", config.max_position_sol);
     let settings = Settings {
-        copy_lamports: (config.copy_trade_amount_sol * 1e9) as u64,
-        max_position_lamports: (config.max_position_sol * 1e9) as u64,
+        copy_lamports: (copy_sol * 1e9) as u64,
+        max_position_lamports: (max_position_sol * 1e9) as u64,
         copy_slippage_bps: config.slippage_bps.max(1500),
         sell_slippage_bps: config.slippage_bps,
         min_whale_lamports: (config.min_whale_buy_sol * 1e9) as u64,
         targets: wallets.iter().cloned().collect(),
     };
     let tips = TipEngine::new(config.min_tip_lamports, config.max_tip_lamports, config.tip_aggression_factor)
-        .with_trade_caps(config.tip_max_pct_of_trade, config.tip_max_panic_pct_of_trade);
+        .with_trade_caps(arg(&args, "--tip-pct", config.tip_max_pct_of_trade), arg(&args, "--panic-tip-pct", config.tip_max_panic_pct_of_trade));
     let base = Params {
         trailing: config.trailing_stop_pct,
         hard_stop: config.hard_stop_loss_pct,
         take_profit: config.take_profit_pct,
         dev_dump: config.dev_dump_threshold_pct,
-        leader_exit: true,
+        leader_exit: !args.iter().any(|a| a == "--no-leader-exit"),
         latency_slots: latency,
+        max_hold_secs: (arg(&args, "--max-hold-mins", 0.0f64) * 60.0) as i64,
     };
 
-    println!("\n🔁 Replaying with current settings: {:.4} SOL per copy, trailing {:.0}%, hard stop {:.0}%, take profit {:.2}x, leader exit on, latency {} slots",
-        settings.copy_lamports as f64 / 1e9, base.trailing * 100.0, base.hard_stop * 100.0, base.take_profit, latency);
+    println!("\n🔁 Replaying: {:.4} SOL per copy (max {:.2} SOL open), trailing {:.0}%, hard stop {:.0}%, take profit {:.2}x, leader exit {}, max hold {}, latency {} slots",
+        settings.copy_lamports as f64 / 1e9, max_position_sol, base.trailing * 100.0, base.hard_stop * 100.0, base.take_profit,
+        if base.leader_exit { "on" } else { "off" },
+        if base.max_hold_secs > 0 { format!("{}m", base.max_hold_secs / 60) } else { "off".into() }, latency);
     let r = simulate(&hist, &timeline, &settings, &tips, base, (since, now)).await;
     println!();
     print_summary("==================== RESULT (current settings) ====================", &r);
@@ -851,11 +871,43 @@ async fn main() -> Result<()> {
         ("latency 1 slot", Params { latency_slots: 1, ..base }),
         ("latency 4 slots", Params { latency_slots: 4, ..base }),
         ("latency 8 slots", Params { latency_slots: 8, ..base }),
-        ("no leader exit", Params { leader_exit: false, ..base }),
+        ("leader exit off", Params { leader_exit: false, ..base }),
+        ("max hold 10m", Params { max_hold_secs: 600, ..base }),
+        ("max hold 30m", Params { max_hold_secs: 1800, ..base }),
     ] {
         let x = simulate(&hist, &timeline, &settings, &tips, p, (since, now)).await;
         println!("   {:<18} {:>4} trades  win {:>5.1}%  PF {:>5.2}  P&L {:+.4} SOL", label, x.trades.len(),
             if x.trades.is_empty() { 0.0 } else { 100.0 * x.wins() as f64 / x.trades.len() as f64 }, x.profit_factor(), sol(x.pnl()));
+    }
+
+    // Wallet selection, walk-forward: keep the wallets whose copies made money in the first
+    // half, then copy only those in the second half (and compare with copying everyone)
+    if args.iter().any(|a| a == "--select-wallets") {
+        let min_trades: usize = arg(&args, "--min-select-trades", 5);
+        let mid = since + (now - since) / 2;
+        let first = simulate(&hist, &timeline, &settings, &tips, base, (since, mid)).await;
+        let mut per: BTreeMap<&str, (usize, i64)> = BTreeMap::new();
+        for t in &first.trades {
+            let e = per.entry(t.leader.as_str()).or_default();
+            e.0 += 1;
+            e.1 += t.pnl_lamports;
+        }
+        let chosen: HashSet<String> = per.iter().filter(|(_, (n, pnl))| *n >= min_trades && *pnl > 0).map(|(w, _)| w.to_string()).collect();
+        println!("\n================ WALLET SELECTION (picked on 1st half: ≥{min_trades} copies and profitable; tested on 2nd half) ================");
+        println!("   1st half ({} → {}): {} of {} wallets qualified", fmt_time(Some(since)), fmt_time(Some(mid)), chosen.len(), wallets.len());
+        for w in &chosen {
+            let (n, pnl) = per[w.as_str()];
+            println!("     {}  {:>3} copies  {:+.4} SOL", w, n, sol(pnl));
+        }
+        let picked = Settings { targets: chosen.clone(), ..settings.clone() };
+        let all = simulate(&hist, &timeline, &settings, &tips, base, (mid, now)).await;
+        print_summary("   2nd half, copying ALL wallets:", &all);
+        if chosen.is_empty() {
+            println!("   2nd half, copying the picked wallets: none qualified");
+        } else {
+            let sel = simulate(&hist, &timeline, &picked, &tips, base, (mid, now)).await;
+            print_summary("   2nd half, copying only the PICKED wallets:", &sel);
+        }
     }
 
     // Parameter sweep with a walk-forward check: pick on the first half, judge on the second

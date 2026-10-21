@@ -2,6 +2,7 @@
 //!
 //! Usage: pnl_report [WALLET] [--limit N] [--rpc URL] [--json PATH]
 //!        pnl_report --paper [PATH]     summarize dry-run paper trades
+//!        pnl_report --latency [PATH]   how many blocks behind the copied trade our buys land
 //!   WALLET   defaults to the configured trader keypair's pubkey
 //!   --limit  max signatures to scan, newest first (default 2000)
 //!   --rpc    RPC endpoint (default SOLANA_RPC_URL from config)
@@ -53,6 +54,11 @@ async fn main() -> Result<()> {
     env_logger::init();
     let args: Vec<String> = std::env::args().skip(1).collect();
     let config = BotConfig::load_from_env().context("Failed to load config")?;
+
+    if args.first().map(String::as_str) == Some("--latency") {
+        let path = args.get(1).cloned().unwrap_or_else(|| clockit::engine::executor::LATENCY_LOG.to_string());
+        return latency_report(&path);
+    }
 
     if args.first().map(String::as_str) == Some("--paper") {
         let path = args.get(1).cloned().unwrap_or_else(|| config.paper_trades_file.clone());
@@ -110,5 +116,35 @@ async fn main() -> Result<()> {
         std::fs::write(&path, serde_json::to_vec_pretty(&rows)?).with_context(|| format!("writing {}", path))?;
         println!("\nPer-token breakdown written to {}", path);
     }
+    Ok(())
+}
+
+/// Distribution of how many blocks after the copied trade our buys land (live) or could earliest
+/// land (paper). The backtest only found an edge when buys land in the same block.
+fn latency_report(path: &str) -> Result<()> {
+    let text = std::fs::read_to_string(path).with_context(|| format!("reading {path} (written by the bot on each copy buy)"))?;
+    let recs: Vec<serde_json::Value> = text.lines().filter_map(|l| serde_json::from_str(l).ok()).collect();
+    println!("⏱️ Copy-buy latency from {path}");
+    for (label, live) in [("PAPER (earliest slot we could land in)", false), ("LIVE (slot we landed in)", true)] {
+        let rows: Vec<&serde_json::Value> = recs.iter().filter(|r| r["landed"].as_bool() == Some(live)).collect();
+        if rows.is_empty() {
+            continue;
+        }
+        let mut buckets = [0usize; 5];
+        for r in &rows {
+            let b = r["blocks"].as_i64().unwrap_or(99).clamp(0, 4) as usize;
+            buckets[b] += 1;
+        }
+        let mut ms: Vec<u64> = rows.iter().filter_map(|r| r["ms"].as_u64()).collect();
+        ms.sort_unstable();
+        let pct = |p: usize| ms.get((ms.len() * p / 100).min(ms.len().saturating_sub(1))).copied().unwrap_or(0);
+        println!("\n{label}: {} buys", rows.len());
+        for (i, name) in ["same block", "+1 block", "+2 blocks", "+3 blocks", "+4 or more"].iter().enumerate() {
+            let n = buckets[i];
+            println!("   {:<11} {:>5}  {:>5.1}%  {}", name, n, 100.0 * n as f64 / rows.len() as f64, "█".repeat(40 * n / rows.len()));
+        }
+        println!("   detection → send: median {} ms, 90th percentile {} ms", pct(50), pct(90));
+    }
+    println!("\nBacktest: copying only made money when buys landed in the same block (+1 block already lost).");
     Ok(())
 }

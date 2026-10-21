@@ -22,9 +22,22 @@ use crate::{
     },
 };
 
+/// Where and when the stream saw the trade a buy reacts to
+#[derive(Debug, Clone, Copy)]
+pub struct Signal {
+    pub slot: u64,
+    pub seen_at: std::time::Instant,
+}
+
+/// One line per copy buy: how many blocks after the copied trade ours lands (live) or could
+/// earliest land (paper: the RPC's current slot when we would send). Summarized by `pnl_report --latency`
+pub const LATENCY_LOG: &str = "data/latency.jsonl";
+
 #[derive(Debug, Clone)]
 pub enum TradeAction {
     Buy {
+        /// The trade that triggered this buy, for measuring how many blocks behind it we land
+        signal: Option<Signal>,
         mint: Pubkey,
         sol_amount_lamports: u64,
         slippage_bps: u64,
@@ -138,6 +151,16 @@ impl ExecutionEngine {
         max_attempts: usize,
         delay: std::time::Duration,
     ) -> bool {
+        self.wait_for_landing_slot(signature, max_attempts, delay).await.is_some()
+    }
+
+    /// Slot the transaction landed in, once it is processed without error; None if it failed or never showed up
+    pub async fn wait_for_landing_slot(
+        &self,
+        signature: &Signature,
+        max_attempts: usize,
+        delay: std::time::Duration,
+    ) -> Option<u64> {
         let payload = serde_json::json!({
             "jsonrpc": "2.0",
             "id": 1,
@@ -156,18 +179,18 @@ impl ExecutionEngine {
                                 let confirmation = status.get("confirmationStatus").and_then(|s| s.as_str());
                                 if confirmation == Some("processed") || confirmation == Some("confirmed") || confirmation == Some("finalized") {
                                     debug!("Signature {} confirmed on attempt {}", signature, attempt);
-                                    return true;
+                                    return Some(status.get("slot").and_then(|s| s.as_u64()).unwrap_or(0));
                                 }
                             } else if status.get("err").map(|e| !e.is_null()).unwrap_or(false) {
                                 warn!("Signature {} failed on-chain with err: {:?}", signature, status.get("err"));
-                                return false;
+                                return None;
                             }
                         }
                     }
                 }
             }
         }
-        false
+        None
     }
 
     /// Paper trading: nothing is sent; buys are simulated and every trade is logged to `paper_log`
@@ -235,6 +258,18 @@ impl ExecutionEngine {
 
     /// Run the transaction through simulateTransaction; Err holds the failure and last logs
     async fn simulate(&self, tx: &Transaction) -> Result<(), String> {
+        self.simulate_at(tx).await.1
+    }
+
+    /// Like `simulate`, plus the slot the RPC simulated at (its current processed slot)
+    async fn simulate_at(&self, tx: &Transaction) -> (Option<u64>, Result<(), String>) {
+        match self.simulate_raw(tx).await {
+            Ok((slot, result)) => (slot, result),
+            Err(e) => (None, Err(e)),
+        }
+    }
+
+    async fn simulate_raw(&self, tx: &Transaction) -> Result<(Option<u64>, Result<(), String>), String> {
         use base64::Engine;
         let serialized = bincode::serialize(tx).map_err(|e| e.to_string())?;
         let payload = serde_json::json!({
@@ -260,15 +295,40 @@ impl ExecutionEngine {
             return Err(err.to_string());
         }
         let value = &json["result"]["value"];
+        let slot = json["result"]["context"]["slot"].as_u64();
         if value["err"].is_null() {
-            Ok(())
+            Ok((slot, Ok(())))
         } else {
             let logs: Vec<&str> = value["logs"].as_array().into_iter().flatten().filter_map(|l| l.as_str()).collect();
-            Err(format!("{} | {}", value["err"], logs.iter().rev().take(3).rev().cloned().collect::<Vec<_>>().join(" | ")))
+            Ok((slot, Err(format!("{} | {}", value["err"], logs.iter().rev().take(3).rev().cloned().collect::<Vec<_>>().join(" | ")))))
         }
     }
 
     /// Append one paper trade record (JSON line)
+    /// Record how far behind the triggering trade a copy buy lands (live) or could earliest land (paper)
+    fn log_latency(&self, mint: &Pubkey, signal: Option<Signal>, our_slot: Option<u64>, ms: u128, landed: bool) {
+        let (Some(signal), Some(our_slot)) = (signal, our_slot) else { return };
+        let blocks = our_slot as i64 - signal.slot as i64;
+        info!(
+            "⏱️ LATENCY {}: copied trade in slot {}, ours {} slot {} ({:+} blocks), {} ms after detection",
+            mint, signal.slot, if landed { "landed in" } else { "could land at" }, our_slot, blocks, ms
+        );
+        let record = serde_json::json!({
+            "mint": mint.to_string(), "signal_slot": signal.slot, "our_slot": our_slot, "blocks": blocks,
+            "ms": ms as u64, "landed": landed, "paper": self.is_dry_run(),
+            "ts": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0),
+        });
+        let line = format!("{}\n", record);
+        let result = (|| -> std::io::Result<()> {
+            std::fs::create_dir_all("data")?;
+            use std::io::Write;
+            std::fs::OpenOptions::new().create(true).append(true).open(LATENCY_LOG)?.write_all(line.as_bytes())
+        })();
+        if let Err(e) = result {
+            warn!("Could not write {}: {}", LATENCY_LOG, e);
+        }
+    }
+
     fn log_paper(&self, record: serde_json::Value) {
         let Some(path) = &self.paper_log else { return };
         let mut record = record;
@@ -312,6 +372,7 @@ impl ExecutionEngine {
     pub async fn execute_action(&self, action: TradeAction) -> Result<()> {
         match action {
             TradeAction::Buy {
+                signal,
                 mint,
                 sol_amount_lamports,
                 slippage_bps,
@@ -323,6 +384,7 @@ impl ExecutionEngine {
             } => {
                 let result = self
                     .execute_buy(
+                        signal,
                         mint,
                         sol_amount_lamports,
                         slippage_bps,
@@ -540,8 +602,10 @@ impl ExecutionEngine {
 
     /// Returns Ok(true) once the buy is confirmed and the position is recorded
     #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)]
     async fn execute_buy(
         &self,
+        signal: Option<Signal>,
         mint: Pubkey,
         sol_amount_lamports: u64,
         slippage_bps: u64,
@@ -614,7 +678,10 @@ impl ExecutionEngine {
         let sig = bundle_tx.signatures[0];
 
         if self.is_dry_run() {
-            if let Err(e) = self.simulate(&bundle_tx).await {
+            let ms = signal.map_or(0, |s| s.seen_at.elapsed().as_millis());
+            let (sim_slot, sim) = self.simulate_at(&bundle_tx).await;
+            self.log_latency(&mint, signal, sim_slot, ms, false);
+            if let Err(e) = sim {
                 // Paper trading judges the trade, not the current wallet balance
                 let unfunded = e.contains("insufficient lamports") || e.contains("AccountNotFound") || e.contains("\"Custom\":1}");
                 if !unfunded {
@@ -651,12 +718,14 @@ impl ExecutionEngine {
             return Ok(true);
         }
 
+        let ms = signal.map_or(0, |s| s.seen_at.elapsed().as_millis());
         self.send_via_rpc(&bundle_tx);
         let bundle_id = self.jito_client.send_bundle(&bundle_tx).await?;
         info!("📡 Buy dispatched (sig: {} | Jito: {} | RPC route: {}). Verifying on-chain confirmation...", sig, bundle_id, self.dual_route_rpc);
 
-        let landed = self.wait_for_confirmation(&sig, 15, std::time::Duration::from_millis(400)).await;
-        if !landed {
+        let landed_slot = self.wait_for_landing_slot(&sig, 15, std::time::Duration::from_millis(400)).await;
+        self.log_latency(&mint, signal, landed_slot.filter(|&s| s > 0), ms, true);
+        if landed_slot.is_none() {
             warn!("⚠️ Bundle for mint {} did not land on-chain (dropped or outbid). Capital preserved (0 SOL spent).", mint);
             return Ok(false);
         }

@@ -27,7 +27,7 @@ use crate::{
         PumpFunBuyPod, PumpFunSellPod,
     },
     engine::{
-        executor::TradeAction,
+        executor::{Signal, TradeAction},
         position_manager::{ExitReason, PositionManager, Reservation},
     },
 };
@@ -96,7 +96,7 @@ impl YellowstoneStreamer {
     }
 
     /// Reserve capital, fetch the curve and queue a copy buy that exits when any leader sells
-    async fn trigger_copy_buy(&self, mint: Pubkey, token_prog: Pubkey, leaders: Vec<Pubkey>, label: &str) {
+    async fn trigger_copy_buy(&self, mint: Pubkey, token_prog: Pubkey, leaders: Vec<Pubkey>, label: &str, signal: Signal) {
         let max_position_lamports = (self.config.max_position_sol * 1e9) as u64;
         let my_sol_lamports = (self.config.copy_trade_amount_sol * 1e9) as u64;
         match self.position_manager.try_reserve(&mint, my_sol_lamports, max_position_lamports).await {
@@ -126,6 +126,7 @@ impl YellowstoneStreamer {
         if self
             .trade_sender
             .send(TradeAction::Buy {
+                signal: Some(signal),
                 mint,
                 sol_amount_lamports: my_sol_lamports,
                 slippage_bps: std::cmp::max(self.config.slippage_bps, 1500),
@@ -362,6 +363,7 @@ impl YellowstoneStreamer {
 
                 // Real-time Transactions from Top Whales & Token Launches (including Inner CPI bot trades)
                 Some(UpdateOneof::Transaction(tx_update)) => {
+                    let trigger = Signal { slot: tx_update.slot, seen_at: std::time::Instant::now() };
                     let tx_info = match tx_update.transaction {
                         Some(t) => t,
                         None => continue,
@@ -519,7 +521,7 @@ impl YellowstoneStreamer {
                                 }
 
                                 processed_mints.insert(mint);
-                                self.trigger_copy_buy(mint, token_prog, vec![whale], "WHALE COPY-TRADE BUY").await;
+                                self.trigger_copy_buy(mint, token_prog, vec![whale], "WHALE COPY-TRADE BUY", trigger).await;
                             } else if let Some(signal_wallet) = signal {
                                 // Fast snipers are a signal, not copied one by one: buy only when
                                 // several of them pile into the same token within the window
@@ -529,7 +531,7 @@ impl YellowstoneStreamer {
                                         mint, cluster.len(), self.config.signal_window_secs
                                     );
                                     processed_mints.insert(mint);
-                                    self.trigger_copy_buy(mint, token_prog, cluster, "SIGNAL-CLUSTER BUY").await;
+                                    self.trigger_copy_buy(mint, token_prog, cluster, "SIGNAL-CLUSTER BUY", trigger).await;
                                 }
                             }
                         }
@@ -737,6 +739,7 @@ impl YellowstoneStreamer {
                                         if self
                                             .trade_sender
                                             .send(TradeAction::Buy {
+                                                signal: Some(trigger),
                                                 mint,
                                                 sol_amount_lamports: my_sol_lamports,
                                                 slippage_bps: snipe_slippage,

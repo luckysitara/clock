@@ -605,6 +605,7 @@ async fn main() -> Result<()> {
                                                 tokio::spawn(async move {
                                                     let _permit = permit;
                                                     let _ = exec.execute_action(TradeAction::Buy {
+                                                        signal: None,
                                                         mint,
                                                         sol_amount_lamports: snipe_sol,
                                                         slippage_bps: 500,

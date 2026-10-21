@@ -45,3 +45,4 @@ data/top_wallets_run*.json
 
 # Backtest history cache and results
 data/backtest/
+data/latency.jsonl

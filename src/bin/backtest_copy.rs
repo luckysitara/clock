@@ -17,6 +17,10 @@
 //!                 [--copy-sol X] [--max-position-sol X] [--tip-pct F] [--panic-tip-pct F]
 //!                 [--take-profit X] [--hard-stop F] [--trailing F]
 //!                 [--end UNIX_TS] [--no-leader-exit] [--max-hold-mins M] [--select-wallets [--min-select-trades N]]
+//!                 [--leader-stats [--min-win-rate 0.7] [--min-closed 10]]
+//!
+//! --leader-stats only reports each copied wallet's own realized results over the period
+//! (win rate, P&L, profit factor on tokens they bought and sold) and exits.
 
 use anyhow::Result;
 use futures::stream::{self, StreamExt};
@@ -719,6 +723,64 @@ fn print_summary(label: &str, r: &SimResult) {
     }
 }
 
+/// Each wallet's own realized results: per token it bought in the period, buy cost vs sell
+/// proceeds (Pump.fun fee included). A token counts as closed once 95% of what was bought is sold.
+fn print_leader_stats(per_wallet: &[(String, Vec<Trade>, i64)], since: i64, min_win_rate: f64, min_closed: usize) {
+    #[derive(Serialize)]
+    struct Stats { wallet: String, closed: usize, wins: usize, win_rate: f64, pnl_sol: f64, roi: f64, profit_factor: f64, open: usize, history_from: i64, passes: bool }
+    let fee = |l: u64| l * PUMP_FEE_BPS / 10_000;
+    let mut rows: Vec<Stats> = per_wallet.iter().map(|(w, trades, covered_from)| {
+        let mut by_mint: HashMap<&str, (u64, u64, u64, u64)> = HashMap::new(); // cost, proceeds, bought, sold
+        let mut trades: Vec<&Trade> = trades.iter().collect();
+        trades.sort_by_key(|t| (t.slot, t.ts));
+        for t in trades {
+            if t.is_buy {
+                let e = by_mint.entry(t.mint.as_str()).or_default();
+                e.0 += t.sol + fee(t.sol);
+                e.2 += t.tokens;
+            } else if let Some(e) = by_mint.get_mut(t.mint.as_str()) {
+                // Sells of tokens bought before the period are ignored
+                e.1 += t.sol - fee(t.sol);
+                e.3 += t.tokens;
+            }
+        }
+        let (mut closed, mut wins, mut open, mut pnl, mut gain, mut loss, mut cost) = (0, 0, 0, 0i64, 0i64, 0i64, 0i64);
+        for (c, p, bought, sold) in by_mint.values() {
+            if *sold * 100 < *bought * 95 {
+                open += 1;
+                continue;
+            }
+            closed += 1;
+            let r = *p as i64 - *c as i64;
+            pnl += r;
+            cost += *c as i64;
+            if r > 0 { wins += 1; gain += r } else { loss -= r }
+        }
+        let win_rate = if closed > 0 { wins as f64 / closed as f64 } else { 0.0 };
+        let profit_factor = if loss > 0 { gain as f64 / loss as f64 } else if gain > 0 { f64::INFINITY } else { 0.0 };
+        let full_history = *covered_from <= since + 3600;
+        Stats {
+            wallet: w.clone(), closed, wins, win_rate, pnl_sol: sol(pnl), roi: if cost > 0 { pnl as f64 / cost as f64 } else { 0.0 },
+            profit_factor, open, history_from: *covered_from,
+            passes: win_rate > min_win_rate && closed >= min_closed && pnl > 0 && full_history,
+        }
+    }).collect();
+    rows.sort_by(|a, b| b.passes.cmp(&a.passes).then(b.win_rate.total_cmp(&a.win_rate)));
+    println!("\n📊 Copied wallets' own results since {} (pass = win rate > {:.0}%, ≥ {} closed tokens, in profit, full history)",
+        fmt_time(Some(since)), min_win_rate * 100.0, min_closed);
+    println!("   {:<44} {:>6} {:>6} {:>9} {:>8} {:>6} {:>5}  {}", "wallet", "closed", "win%", "P&L SOL", "ROI", "PF", "open", "");
+    for r in &rows {
+        let note = if r.history_from > since + 3600 { format!("history only from {}", fmt_time(Some(r.history_from))) } else { String::new() };
+        println!("   {:<44} {:>6} {:>5.1}% {:>+9.2} {:>+7.1}% {:>6.2} {:>5}  {} {}", r.wallet, r.closed, r.win_rate * 100.0, r.pnl_sol,
+            r.roi * 100.0, r.profit_factor.min(99.0), r.open, if r.passes { "✅ PASS" } else { "❌" }, note);
+    }
+    let passing: Vec<&str> = rows.iter().filter(|r| r.passes).map(|r| r.wallet.as_str()).collect();
+    println!("\n   {} of {} wallets pass", passing.len(), rows.len());
+    save(Path::new("data/leader_stats.json"), &rows);
+    let _ = std::fs::write("data/leader_stats_passing.txt", passing.join(","));
+    println!("   Wrote data/leader_stats.json and data/leader_stats_passing.txt (comma-separated, for TARGET_WALLETS)");
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
@@ -756,8 +818,13 @@ async fn main() -> Result<()> {
     let min_whale_lamports = (config.min_whale_buy_sol * 1e9) as u64;
     let mut all_buys: HashMap<String, (i64, i64)> = HashMap::new();
     let mut sampled: HashSet<String> = HashSet::new();
+    let leader_stats_mode = args.iter().any(|a| a == "--leader-stats");
+    let mut per_wallet: Vec<(String, Vec<Trade>, i64)> = Vec::new();
     for (i, w) in wallets.iter().enumerate() {
         let (trades, covered_from) = wallet_trades(&f, w, since, now, max_wallet_txs, offline).await;
+        if leader_stats_mode {
+            per_wallet.push((w.clone(), trades.clone(), covered_from));
+        }
         let buys: Vec<&Trade> = trades.iter().filter(|t| t.is_buy).collect();
         for b in &buys {
             let e = all_buys.entry(b.mint.clone()).or_insert((b.ts, b.ts));
@@ -780,6 +847,10 @@ async fn main() -> Result<()> {
         let sample = if take < copyable.len() { format!(", sampling {take} of {} tokens", copyable.len()) } else { String::new() };
         println!("   [{:>2}/{}] {}…  {:>4} buys, {:>4} sells{}{}", i + 1, wallets.len(), &w[..8.min(w.len())],
             buys.len(), trades.len() - buys.len(), partial, sample);
+    }
+    if leader_stats_mode {
+        print_leader_stats(&per_wallet, since, arg(&args, "--min-win-rate", 0.7), arg(&args, "--min-closed", 10usize));
+        return Ok(());
     }
     let buys_by_mint: HashMap<String, (i64, i64)> = all_buys.into_iter().filter(|(m, _)| sampled.contains(m)).collect();
     println!("   {} tokens to replay", buys_by_mint.len());

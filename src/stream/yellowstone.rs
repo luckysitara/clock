@@ -119,6 +119,13 @@ impl YellowstoneStreamer {
             }
         };
 
+        // A creator buying its own token is setting up a dump onto copiers, not trading
+        if leaders.contains(&curve.creator) {
+            info!("🛡️ Skipping {} on {}: the copied wallet created this token", label, mint);
+            self.position_manager.release(&mint).await;
+            return;
+        }
+
         info!(
             "⚡ TRIGGERING {}: {} SOL on Mint {} (exits when {} leader(s) sell)",
             label, self.config.copy_trade_amount_sol, mint, leaders.len()

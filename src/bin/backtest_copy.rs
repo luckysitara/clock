@@ -571,6 +571,8 @@ async fn simulate(hist: &[MintHistory], timeline: &[(u64, usize, usize)], s: &Se
         // 4. A copied wallet buying is a signal
         if t.is_buy && t.sol >= s.min_whale_lamports && t.ts >= entries.0 && t.ts < entries.1 && !curve.complete {
             let leader = if s.targets.contains(&t.user) { Some(&t.user) } else if s.targets.contains(&t.fee_payer) { Some(&t.fee_payer) } else { None };
+            // Like the bot: never copy a creator buying its own token
+            let leader = leader.filter(|l| **l != t.creator);
             if let Some(leader) = leader {
                 r.signals += 1;
                 match pm.try_reserve(&mints[mi], s.copy_lamports, s.max_position_lamports).await {

@@ -17,6 +17,9 @@ pub const WSOL_MINT: &str = "So11111111111111111111111111111111111111112";
 
 // 8-byte Raw Anchor Discriminators
 pub const CREATE_DISCRIMINATOR_BYTES: [u8; 8] = [24, 30, 200, 40, 5, 28, 7, 119];
+/// Pump.fun's newer `CreateV2` launch instruction (the old `Create` is now rare).
+/// Same arg layout (name/symbol/uri); mint is account 0, creator is the tx fee-payer.
+pub const CREATE_V2_DISCRIMINATOR_BYTES: [u8; 8] = [214, 144, 76, 236, 95, 139, 49, 180];
 pub const BUY_DISCRIMINATOR_BYTES: [u8; 8] = [102, 6, 61, 18, 1, 218, 235, 234];
 pub const SELL_DISCRIMINATOR_BYTES: [u8; 8] = [51, 230, 133, 164, 1, 127, 131, 173];
 pub const SELL_DISCRIMINATOR_ALT_BYTES: [u8; 8] = [51, 230, 250, 225, 87, 251, 11, 54];
@@ -24,6 +27,7 @@ pub const BONDING_CURVE_ACCOUNT_DISCRIMINATOR_BYTES: [u8; 8] = [23, 183, 248, 55
 
 // Fast 64-bit Little-Endian Constants for single-cycle CPU register comparisons
 pub const CREATE_DISCRIMINATOR_U64: u64 = u64::from_le_bytes(CREATE_DISCRIMINATOR_BYTES);
+pub const CREATE_V2_DISCRIMINATOR_U64: u64 = u64::from_le_bytes(CREATE_V2_DISCRIMINATOR_BYTES);
 pub const BUY_DISCRIMINATOR_U64: u64 = u64::from_le_bytes(BUY_DISCRIMINATOR_BYTES);
 pub const SELL_DISCRIMINATOR_U64: u64 = u64::from_le_bytes(SELL_DISCRIMINATOR_BYTES);
 pub const SELL_DISCRIMINATOR_ALT_U64: u64 = u64::from_le_bytes(SELL_DISCRIMINATOR_ALT_BYTES);
